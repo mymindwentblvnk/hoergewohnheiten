@@ -1,24 +1,25 @@
-import settings
+from datetime import datetime, timedelta
 
 from spotipy import Spotify
 import spotipy.util
 
-from datetime import datetime, timedelta
+import settings
 
 
 class Song(object):
 
-    def __init__(self, id, played_at, artist_name, track_name):
-        self.id = id
+    def __init__(self, track_id, played_at, artist_id, artist_name, track_name):
+        self.id = track_id
         self.played_at = played_at
+        self.artist_id = artist_id
         self.artist_name = artist_name
         self.track_name = track_name
 
     @property
     def csv_string(self):
-        fields = [self.id, self.played_at, self.artist_name, self.track_name]
-        escaped_fields = [str(field).replace('"', '\\"') for field in fields]
-        return ",".join(['"{}"'.format(field) for field in escaped_fields])
+        fields = [self.id, self.played_at, self.artist_id, self.artist_name, self.track_name]
+        escaped_fields = [str(field).replace(',', '') for field in fields]
+        return ",".join(escaped_fields)
 
 
 def convert_played_at_to_datetime(played_at):
@@ -40,30 +41,51 @@ class SpotifyConnection(object):
     def _get_songs_from_response(self, response):
         songs = []
         for item in response['items']:
-            song = Song(id= item['track']['id'],
+            song = Song(track_id= item['track']['id'],
                         played_at=convert_played_at_to_datetime(item['played_at']),
+                        artist_id=item['track']['artists'][0]['id'],
                         artist_name=item['track']['artists'][0]['name'],
                         track_name=item['track']['name'])
             songs.append(song)
         return songs
 
     def get_recently_played_songs(self, limit=50):
-        recently_played = []
-        response = self.client._get('me/player/recently-played', limit=limit)
-        recently_played.extend(self._get_songs_from_response(response))
+        songs = []
+        response = self.client._get('me/player/recently-played', after=1502311849, limit=limit)
+        songs.extend(self._get_songs_from_response(response))
         if 'next' in response:
             response = self.client.next(response)
-            recently_played.extend(self._get_songs_from_response(response))
-        return recently_played
+            songs.extend(self._get_songs_from_response(response))
+        print("Loaded last {} played songs.".format(len(songs)))
+        return songs
+
+
+def get_run_name():
+    now = datetime.now()
+    return "run_{}-{}-{}_{}-{}-{}".format(now.year,
+                                          now.month,
+                                          now.day,
+                                          now.hour,
+                                          now.minute,
+                                          now.second)
+
+
+def write_songs_to_csv(songs, run_name):
+    file_path = '{}/{}.csv'.format(settings.PATH_TO_DATA_REPO, run_name)
+    print("Writing file {}.".format(file_path))
+    with open(file_path, 'w') as f:
+        f.write("Track_ID,Played_At,Artist_ID,Artist_Name,Track_Name\n")
+        for song in songs:
+            f.write("{}\n".format(song.csv_string))
 
 
 def main():
+    run_name = get_run_name()
+    print("Starting run {}".format(run_name))
     s = SpotifyConnection(scope='user-read-recently-played')
     songs = s.get_recently_played_songs()
-
-    # Create CSV
-    for song in songs:
-        print(song.csv_string)
+    write_songs_to_csv(songs, run_name)
+    print("Bye.")
 
 
 if __name__ == '__main__':
