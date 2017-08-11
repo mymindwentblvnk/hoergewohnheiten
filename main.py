@@ -60,14 +60,18 @@ class SpotifyConnection(object):
         return songs
 
 
+def pad_number(number):
+    return "0{}".format(number)[-2:]
+
+
 def get_run_name():
     now = datetime.now()
-    return "run_{}-{}-{}_{}-{}-{}".format(now.year,
-                                          now.month,
-                                          now.day,
-                                          now.hour,
-                                          now.minute,
-                                          now.second)
+    return "run_{}-{}-{}_{}-{}-{}".format(pad_number(now.year),
+                                          pad_number(now.month),
+                                          pad_number(now.day),
+                                          pad_number(now.hour),
+                                          pad_number(now.minute),
+                                          pad_number(now.second))
 
 
 def write_songs_to_csv(songs, run_name):
