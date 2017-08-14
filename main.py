@@ -77,8 +77,8 @@ class Song(object):
     @property
     def csv_string(self):
         fields = [self.played_at,
-                  self.track_name,
                   self.track_id,
+                  self.track_name,
                   self.artist_id,
                   self.artist_name,
                   self.album_id,
