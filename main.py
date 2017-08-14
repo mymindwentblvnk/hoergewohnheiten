@@ -59,6 +59,14 @@ def write_songs_to_csv(songs, csv_file_path):
             f.write("{}\n".format(song.csv_string))
 
 
+def git_push_csv(csv_file_path):
+    print("Pushing file to GitHub.")
+    repo = Repo(settings.PATH_TO_DATA_REPO)
+    repo.index.add([csv_file_path])
+    repo.index.commit("Updating/uploading {}".format(csv_file_path))
+    repo.remote('origin').push()
+
+
 class Song(object):
 
     def __init__(self,
@@ -121,14 +129,6 @@ class SpotifyConnection(object):
             response = self.client.next(response)
             songs.extend(self._get_songs_from_response(response))
         return songs
-
-
-def git_push_csv(csv_file_path):
-    print("Pushing file to GitHub.")
-    repo = Repo(settings.PATH_TO_DATA_REPO)
-    repo.index.add([csv_file_path])
-    repo.index.commit("Updating/uploading {}".format(csv_file_path))
-    repo.remote('origin').push()
 
 
 def main():
