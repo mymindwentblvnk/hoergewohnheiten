@@ -2,6 +2,7 @@
 .cache-*
 *.swp
 settings.py
+last_imported_datetime.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
