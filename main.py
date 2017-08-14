@@ -5,6 +5,8 @@ import pickle
 from spotipy import Spotify
 import spotipy.util
 
+from git import Repo
+
 import settings
 
 
@@ -28,8 +30,8 @@ def convert_datetime_to_utc_in_ms(dt):
 
 def get_last_imported_datetime_as_utc():
     try:
-        last_imported_datetime_as_string = pickle.load(open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'rb'))
-        return convert_datetime_to_utc_in_ms(last_imported_datetime_as_string)
+        last_imported_datetime = pickle.load(open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'rb'))
+        return convert_datetime_to_utc_in_ms(last_imported_datetime)
     except FileNotFoundError:
         print("No last imported datetime found at {}.".format(settings.LAST_IMPORTED_DATETIME_FILE_PATH))
 
@@ -42,15 +44,12 @@ def pad_number(number):
     return "0{}".format(number)[-2:]
 
 
-def write_songs_to_csv(songs):
-    file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
-                                      pad_number(YEAR),
-                                      pad_number(MONTH))
-    print("Writing file {}.".format(file_path))
+def write_songs_to_csv(songs, csv_file_path):
+    print("Writing file {}.".format(csv_file_path))
 
-    initial_write = False if os.path.exists(file_path) else True
+    initial_write = False if os.path.exists(csv_file_path) else True
 
-    with open(file_path, 'a') as f:
+    with open(csv_file_path, 'a') as f:
         if initial_write:
             f.write("played_at,track_id,track_name,artist_id,artist_name,album_id,album_name\n")
         for song in songs:
@@ -121,6 +120,14 @@ class SpotifyConnection(object):
         return songs
 
 
+def git_push_csv(csv_file_path):
+    print("Pushing file to GitHub.")
+    repo = Repo(settings.PATH_TO_DATA_REPO)
+    repo.index.add([csv_file_path])
+    repo.index.commit("Updating/uploading {}".format(csv_file_path))
+    repo.remote('origin').push()
+
+
 def main():
     print("Starting run at {}".format(datetime.now()))
     print(50 * "-")
@@ -134,8 +141,11 @@ def main():
     print("Loaded last {} played songs.".format(len(songs)))
 
     if songs:
-        # Write songs
-        write_songs_to_csv(songs)
+        file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
+                                        pad_number(YEAR),
+                                        pad_number(MONTH))
+        write_songs_to_csv(songs, file_path)
+        git_push_csv(file_path)
 
         # Save last imported datetime
         last_imported_datetime = get_last_imported_datetime_from_songs(songs)
