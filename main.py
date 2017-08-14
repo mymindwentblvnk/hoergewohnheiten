@@ -30,8 +30,8 @@ def convert_datetime_to_utc_in_ms(dt):
 
 def get_last_imported_datetime_as_utc():
     try:
-        last_imported_datetime_as_string = pickle.load(open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'rb'))
-        return convert_datetime_to_utc_in_ms(last_imported_datetime_as_string)
+        last_imported_datetime = pickle.load(open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'rb'))
+        return convert_datetime_to_utc_in_ms(last_imported_datetime)
     except FileNotFoundError:
         print("No last imported datetime found at {}.".format(settings.LAST_IMPORTED_DATETIME_FILE_PATH))
 
