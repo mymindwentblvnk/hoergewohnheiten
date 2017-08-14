@@ -145,8 +145,8 @@ def main():
 
     if songs:
         file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
-                                        pad_number(YEAR),
-                                        pad_number(MONTH))
+                                          YEAR,
+                                          pad_number(MONTH))
         write_songs_to_csv(songs, file_path)
         git_push_csv(file_path)
 
