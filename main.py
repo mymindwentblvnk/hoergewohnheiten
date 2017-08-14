@@ -14,8 +14,8 @@ YEAR = datetime.now().year
 MONTH = datetime.now().month
 
 
-def convert_played_at_to_datetime(played_at):
-    return datetime.strptime(played_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
+    return datetime.strptime(played_at, date_format)
 
 
 def get_last_imported_datetime_from_songs(songs):
