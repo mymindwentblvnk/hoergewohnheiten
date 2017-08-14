@@ -94,7 +94,7 @@ class Song(object):
                   self.artist_name,
                   self.album_id,
                   self.album_name]
-        escaped_fields = [str(field).replace(',', '') for field in fields]
+        escaped_fields = [str(field).replace(',', '').replace('\'', '').replace('\"', '') for field in fields]
         return ",".join(escaped_fields)
 
 
