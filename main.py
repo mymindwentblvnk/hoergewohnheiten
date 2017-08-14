@@ -15,7 +15,10 @@ MONTH = datetime.now().month
 
 
 def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
-    return datetime.strptime(played_at, date_format)
+    try:
+        return datetime.strptime(played_at, date_format)
+    except:
+        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
 
 
 def get_last_imported_datetime_from_songs(songs):
