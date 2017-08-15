@@ -63,7 +63,7 @@ def git_push_csv(csv_file_path):
     print("Pushing file to GitHub.")
     repo = Repo(settings.PATH_TO_DATA_REPO)
     repo.index.add([csv_file_path])
-    repo.index.commit("Updating/uploading {}".format(csv_file_path))
+    repo.index.commit("Updating {}".format(csv_file_path.split('/')[-1]))
     repo.remote('origin').push()
 
 
