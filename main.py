@@ -55,7 +55,7 @@ def write_songs_to_csv(songs, csv_file_path):
     with open(csv_file_path, 'a') as f:
         if initial_write:
             f.write("played_at,track_id,track_name,artist_id,artist_name,album_id,album_name\n")
-        for song in songs:
+        for song in reversed(songs):  # Reverse songs so latest play is at the bottom
             f.write("{}\n".format(song.csv_string))
 
 
