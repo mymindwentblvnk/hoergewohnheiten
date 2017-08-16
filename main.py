@@ -5,6 +5,8 @@ import pickle
 from spotipy import Spotify
 import spotipy.util
 
+import pyowm
+
 from git import Repo
 
 import settings
@@ -12,6 +14,17 @@ import settings
 
 YEAR = datetime.now().year
 MONTH = datetime.now().month
+DAY = datetime.now().day
+
+OWM = pyowm.OWM(settings.OPEN_WEATHER_MAP_API_KEY)
+
+
+def get_temperature_and_weather_status():
+    observation = OWM.weather_at_id(settings.OPEN_WATHER_MAP_NUREMBERG_ID)
+    weather = observation.get_weather()
+    temperature = weather.get_temperature(unit='celsius')['temp']
+    weather_status = weather.get_detailed_status()
+    return temperature, weather_status
 
 
 def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
@@ -76,7 +89,11 @@ class Song(object):
                  artist_name,
                  track_name,
                  album_id,
-                 album_name):
+                 album_name,
+                 bpm,
+                 energy,
+                 weather_temperature,
+                 weather_status):
         self.played_at = played_at
         self.track_id = track_id
         self.track_name = track_name
@@ -84,6 +101,10 @@ class Song(object):
         self.artist_name = artist_name
         self.album_id = album_id
         self.album_name = album_name
+        self.bpm = bpm
+        self.energy = energy
+        self.weather_temperature=weather_temperature
+        self.weather_status=weather_status
 
     @property
     def csv_string(self):
@@ -98,7 +119,8 @@ class Song(object):
         return ",".join(escaped_fields)
 
 
-class SpotifyConnection(object):
+
+class SpotifyRecentPlaysManager(object):
 
     def __init__(self, scope):
         token = spotipy.util.prompt_for_user_token(settings.SPOTIFY_USER_NAME,
@@ -108,23 +130,42 @@ class SpotifyConnection(object):
                                                    redirect_uri=settings.SPOTIFY_REDIRECT_URI)
         self.client = Spotify(auth=token)
 
-    def _get_songs_from_response(self, response):
+    def create_audio_features_from_response(self, response):
+        track_ids = [item['track']['id'] for item in response['items']]
+        audio_features = self.client.audio_features(track_ids)
+        audio_features_track_ids = [f['id'] for f in audio_features]
+        return dict(zip(audio_features_track_ids, audio_features))
+
+    def create_songs_from_response(self, response):
+        audio_features = self.create_audio_features_from_response(response)
+
         songs = []
+
         for item in response['items']:
+            # Get weather for song
+            temperature, weather_status = get_temperature_and_weather_status()
+
+            # Get audio features
+            audio_feature = audio_features[item['track']['id']]
+
             song = Song(played_at=convert_played_at_to_datetime(item['played_at']),
                         track_id= item['track']['id'],
                         track_name=item['track']['name'],
                         artist_id=item['track']['artists'][0]['id'],
                         artist_name=item['track']['artists'][0]['name'],
                         album_id=item['track']['album']['id'],
-                        album_name=item['track']['album']['name'])
+                        album_name=item['track']['album']['name'],
+                        bpm=audio_feature['tempo'],
+                        energy=audio_feature['energy'],
+                        weather_temperature=temperature,
+                        weather_status=weather_status)
             songs.append(song)
         return songs
 
-    def get_recently_played_songs(self, limit=50, after=None):
+    def get_recently_played_tracks(self, limit=50, after=None):
         songs = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        songs.extend(self._get_songs_from_response(response))
+        songs.extend(self.create_songs_from_response(response))
         if 'next' in response:
             response = self.client.next(response)
             songs.extend(self._get_songs_from_response(response))
@@ -139,11 +180,13 @@ def main():
     last_imported_datetime_as_utc = get_last_imported_datetime_as_utc()
 
     # Load songs
-    s = SpotifyConnection(scope='user-read-recently-played')
-    songs = s.get_recently_played_songs(after=last_imported_datetime_as_utc)
-    print("Loaded last {} played songs.".format(len(songs)))
+    s = SpotifyRecentPlaysManager(scope='user-read-recently-played')
+    songs = s.get_recently_played_tracks(after=last_imported_datetime_as_utc)
+    print("Loaded last {} played tracks.".format(len(songs)))
+    import pudb; pu.db
 
-    if songs:
+    #if songs:
+    if 0:
         file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
                                           YEAR,
                                           pad_number(MONTH))
