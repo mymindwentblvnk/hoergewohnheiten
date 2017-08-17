@@ -5,6 +5,8 @@ import pickle
 from spotipy import Spotify
 import spotipy.util
 
+import pyowm
+
 from git import Repo
 
 import settings
@@ -12,6 +14,17 @@ import settings
 
 YEAR = datetime.now().year
 MONTH = datetime.now().month
+DAY = datetime.now().day
+
+
+def get_last_imported_datetime_from_tracks(tracks):
+    if tracks:
+        return max([t.played_at for t in tracks])
+
+
+def convert_datetime_to_utc_in_ms(dt):
+    neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
+    return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
 
 
 def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
@@ -19,16 +32,6 @@ def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'
         return datetime.strptime(played_at, date_format)
     except:
         return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
-
-
-def get_last_imported_datetime_from_songs(songs):
-    if songs:
-        return max([s.played_at for s in songs])
-
-
-def convert_datetime_to_utc_in_ms(dt):
-    neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
-    return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
 
 
 def get_last_imported_datetime_as_utc():
@@ -47,16 +50,16 @@ def pad_number(number):
     return "0{}".format(number)[-2:]
 
 
-def write_songs_to_csv(songs, csv_file_path):
+def write_tracks_to_csv(tracks, csv_file_path):
     print("Writing file {}.".format(csv_file_path))
 
     initial_write = False if os.path.exists(csv_file_path) else True
 
     with open(csv_file_path, 'a') as f:
         if initial_write:
-            f.write("played_at,track_id,track_name,artist_id,artist_name,album_id,album_name\n")
-        for song in reversed(songs):  # Reverse songs so latest play is at the bottom
-            f.write("{}\n".format(song.csv_string))
+            f.write("played_at,track_id,track_name,track_bpm,track_energy,artist_id,artist_name,album_id,album_name,album_label,album_genres,weather_temperature,weather_status\n")
+        for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
+            f.write("{}\n".format(track.csv_string))
 
 
 def git_push_csv(csv_file_path):
@@ -67,68 +70,135 @@ def git_push_csv(csv_file_path):
     repo.remote('origin').push()
 
 
-class Song(object):
+class Track(object):
 
     def __init__(self,
                  played_at,
                  track_id,
+                 track_name,
+                 track_bpm,
+                 track_energy,
                  artist_id,
                  artist_name,
-                 track_name,
                  album_id,
-                 album_name):
+                 album_name,
+                 album_label,
+                 album_genres,
+                 weather_temperature,
+                 weather_status):
         self.played_at = played_at
         self.track_id = track_id
         self.track_name = track_name
+        self.track_bpm = track_bpm
+        self.track_energy = track_energy
         self.artist_id = artist_id
         self.artist_name = artist_name
         self.album_id = album_id
         self.album_name = album_name
+        self.album_label = album_label
+        self.album_genres = album_genres
+        self.weather_temperature=weather_temperature
+        self.weather_status=weather_status
 
     @property
     def csv_string(self):
         fields = [self.played_at,
                   self.track_id,
                   self.track_name,
+                  self.track_bpm,
+                  self.track_energy,
                   self.artist_id,
                   self.artist_name,
                   self.album_id,
-                  self.album_name]
+                  self.album_name,
+                  self.album_label,
+                  self.album_genres,
+                  self.weather_temperature,
+                  self.weather_status]
         escaped_fields = [str(field).replace(',', '').replace('\'', '').replace('\"', '') for field in fields]
         return ",".join(escaped_fields)
 
 
-class SpotifyConnection(object):
+class HoergewohnheitenManager(object):
 
-    def __init__(self, scope):
+    def __init__(self):
         token = spotipy.util.prompt_for_user_token(settings.SPOTIFY_USER_NAME,
-                                                   scope=scope,
+                                                   scope='user-read-recently-played',
                                                    client_id=settings.SPOTIFY_CLIENT_ID,
                                                    client_secret=settings.SPOTIFY_CLIENT_SECRET,
                                                    redirect_uri=settings.SPOTIFY_REDIRECT_URI)
         self.client = Spotify(auth=token)
+        self.owm = pyowm.OWM(settings.OPEN_WEATHER_MAP_API_KEY)
+        self.audio_feature_cache = {}
+        self.album_cache = {}
 
-    def _get_songs_from_response(self, response):
-        songs = []
+    def get_temperature_and_weather_status(self):
+        try:
+            observation = self.owm.weather_at_id(settings.OPEN_WATHER_MAP_NUREMBERG_ID)
+            weather = observation.get_weather()
+            temperature = weather.get_temperature(unit='celsius')['temp']
+            weather_status = weather.get_detailed_status()
+            return temperature, weather_status
+        except:
+            print("Weather could not be loaded.")
+            return '',''
+
+    def get_audio_feature(self, track_id):
+        if track_id not in self.audio_feature_cache:
+            audio_feature = self.client.audio_features(track_id)
+            self.audio_feature_cache[track_id] = audio_feature[0]
+        return self.audio_feature_cache[track_id]
+
+    def get_album(self, album_id):
+        if album_id not in self.album_cache:
+            response = self.client.album(album_id)
+            self.album_cache[album_id] = response
+        return self.album_cache[album_id]
+
+    def _stringify_genres(self, genres):
+        return "|".join(genres) if genres else ''
+
+    def create_tracks_from_response(self, response):
+        tracks = []
+
         for item in response['items']:
-            song = Song(played_at=convert_played_at_to_datetime(item['played_at']),
-                        track_id= item['track']['id'],
-                        track_name=item['track']['name'],
-                        artist_id=item['track']['artists'][0]['id'],
-                        artist_name=item['track']['artists'][0]['name'],
-                        album_id=item['track']['album']['id'],
-                        album_name=item['track']['album']['name'])
-            songs.append(song)
-        return songs
+            # Get weather for track
+            temperature, weather_status = self.get_temperature_and_weather_status()
 
-    def get_recently_played_songs(self, limit=50, after=None):
-        songs = []
+            # Get audio features
+            audio_feature = self.get_audio_feature(item['track']['id'])
+            bpm = audio_feature['tempo']
+            energy = audio_feature['energy']
+
+            # Get album information
+            album = self.get_album(item['track']['album']['id'])
+            label = album['label']
+            genres = self._stringify_genres(album['genres'])
+
+            track = Track(played_at=convert_played_at_to_datetime(item['played_at']),
+                          track_id= item['track']['id'],
+                          track_name=item['track']['name'],
+                          track_bpm=bpm,
+                          track_energy=energy,
+                          artist_id=item['track']['artists'][0]['id'],
+                          artist_name=item['track']['artists'][0]['name'],
+                          album_id=item['track']['album']['id'],
+                          album_name=item['track']['album']['name'],
+                          album_label=label,
+                          album_genres=genres,
+                          weather_temperature=temperature,
+                          weather_status=weather_status)
+            tracks.append(track)
+        return tracks
+
+    def get_recently_played_tracks(self, limit=50, after=None):
+        tracks = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        songs.extend(self._get_songs_from_response(response))
+        tracks.extend(self.create_tracks_from_response(response))
         if 'next' in response:
             response = self.client.next(response)
-            songs.extend(self._get_songs_from_response(response))
-        return songs
+            tracks.extend(self.create_tracks_from_response(response))
+        return tracks
 
 
 def main():
@@ -138,20 +208,20 @@ def main():
     # Get last imported datetime
     last_imported_datetime_as_utc = get_last_imported_datetime_as_utc()
 
-    # Load songs
-    s = SpotifyConnection(scope='user-read-recently-played')
-    songs = s.get_recently_played_songs(after=last_imported_datetime_as_utc)
-    print("Loaded last {} played songs.".format(len(songs)))
+    # Load tracks
+    mgr = HoergewohnheitenManager()
+    tracks = mgr.get_recently_played_tracks(after=last_imported_datetime_as_utc)
+    print("Loaded last {} played tracks.".format(len(tracks)))
 
-    if songs:
+    if tracks:
         file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
-                                          YEAR,
-                                          pad_number(MONTH))
-        write_songs_to_csv(songs, file_path)
+                                            YEAR,
+                                            pad_number(MONTH))
+        write_tracks_to_csv(tracks, file_path)
         git_push_csv(file_path)
 
         # Save last imported datetime
-        last_imported_datetime = get_last_imported_datetime_from_songs(songs)
+        last_imported_datetime = get_last_imported_datetime_from_tracks(tracks)
         save_last_imported_datetime(last_imported_datetime)
     print("Bye.")
 
