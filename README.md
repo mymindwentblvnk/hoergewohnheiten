@@ -10,8 +10,8 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
 
 You can see my data repository here [HoergewohnheitenData](https://github.com/michael-123/HoergewohnheitenData). The data looks like this:
 
-| played_at | track_id | track_name | track_bpm | track_energy | artist_id | artist_name | album_id | album_name | album_label | album_genres | weather_temperature | weather_status |
-|-----------|----------|------------|-----------|--------------|-----------|-------------|----------|------------|-------------|--------------|---------------------|----------------|
+| played_at_as_utc | track_id | track_name | track_bpm | track_energy | artist_id | artist_name | album_id | album_name | album_label | album_genres | weather_temperature | weather_status |
+|------------------|----------|------------|-----------|--------------|-----------|-------------|----------|------------|-------------|--------------|---------------------|----------------|
 | 2017-08-17 12:17:50.782000 | 0HqXBQtXt6quSgZDKkoflI | freisein | 120.077 | 0.78 | 73JMQvllbBsfDclpXOW4Wj | morten | 3tOvdq705xY714EgYcfuJi | freisein | Morten | | 25.0 | broken clouds |
 | 2017-08-17 12:18:30.297000 | 46F8PBRZTHR1IYuhKKuNl2 | Turn Off The Lights (Whos Afraid Of The Dark) - Original Mix | 123.998 | 0.892 | 7nqpEU6DCHkNtK1bYsyS3W | Kerri Chandler | 78Ob8dIG0FxLtVeZc6EYo6 | Turn Off The Lights (Whos Afraid Of The Dark) Remixes | Kaoz Theory | | 25.39 | broken clouds |
 | 2017-08-17 12:22:28.532000 | 16nWs4O6mbYl7K1KzriegE | Timeflys | 160.003 | 0.644| 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard | 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories | Mall Music Inc. | | 25.39 | broken clouds |
@@ -29,8 +29,8 @@ The idea is to answer questions like
 * My favorite music label 
 * My favorite genre per day/week/year/ever
 * What music do I like the most if it is cloudy outside?
-* What music is best for me is best for me when the sun is shining?
-* What energy must a song have to fit the weather?
+* What music is best for me when the sun is shining?
+* What energy must a song have to fit my morning routine?
 * If enough data is collected I can generate a playlist every morning based on the weather.
 
 ## What Is Needed?

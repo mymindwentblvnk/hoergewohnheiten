@@ -31,7 +31,7 @@ def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'
     try:
         return datetime.strptime(played_at, date_format)
     except:
-        # For the single moment where the played at time hit a full second
+        # For the single moment where the played at time hits a full second
         return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
 
 
