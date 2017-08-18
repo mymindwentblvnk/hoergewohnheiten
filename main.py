@@ -14,7 +14,6 @@ import settings
 
 YEAR = datetime.now().year
 MONTH = datetime.now().month
-DAY = datetime.now().day
 
 
 def get_last_imported_datetime_from_tracks(tracks):
@@ -58,7 +57,7 @@ def write_tracks_to_csv(tracks, csv_file_path):
 
     with open(csv_file_path, 'a') as f:
         if initial_write:
-            f.write("played_at,track_id,track_name,track_bpm,track_energy,artist_id,artist_name,album_id,album_name,album_label,album_genres,weather_temperature,weather_status\n")
+            f.write("played_at_as_utc,track_id,track_name,track_bpm,track_energy,artist_id,artist_name,album_id,album_name,album_label,album_genres,weather_temperature,weather_status\n")
         for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
             f.write("{}\n".format(track.csv_string))
 
@@ -162,10 +161,10 @@ class HoergewohnheitenManager(object):
     def create_tracks_from_response(self, response):
         tracks = []
 
-        for item in response['items']:
-            # Get weather for track
-            temperature, weather_status = self.get_temperature_and_weather_status()
+        # Get weather for this run
+        temperature, weather_status = self.get_temperature_and_weather_status()
 
+        for item in response['items']:
             # Get audio features
             audio_feature = self.get_audio_feature(item['track']['id'])
             bpm = audio_feature['tempo']
@@ -216,14 +215,17 @@ def main():
 
     if tracks:
         file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
-                                            YEAR,
-                                            pad_number(MONTH))
+                                          YEAR,
+                                          pad_number(MONTH))
         write_tracks_to_csv(tracks, file_path)
-        git_push_csv(file_path)
 
         # Save last imported datetime
         last_imported_datetime = get_last_imported_datetime_from_tracks(tracks)
         save_last_imported_datetime(last_imported_datetime)
+
+        git_push_csv(file_path)
+
+    print(50 * "-")
     print("Bye.")
 
 
