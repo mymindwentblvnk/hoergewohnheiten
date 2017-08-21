@@ -15,6 +15,8 @@ import settings
 YEAR = datetime.now().year
 MONTH = datetime.now().month
 
+CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,artist_genres,album_id,album_name,album_label,album_genres,weather_temperature,weather_status"
+
 
 def get_last_imported_datetime_from_tracks(tracks):
     if tracks:
@@ -57,7 +59,7 @@ def write_tracks_to_csv(tracks, csv_file_path):
 
     with open(csv_file_path, 'a') as f:
         if initial_write:
-            f.write("played_at_as_utc,track_id,track_name,track_bpm,track_energy,artist_id,artist_name,album_id,album_name,album_label,album_genres,weather_temperature,weather_status\n")
+            f.write("{}\n".format(CSV_HEADER))
         for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
             f.write("{}\n".format(track.csv_string))
 
@@ -78,8 +80,10 @@ class Track(object):
                  track_name,
                  track_bpm,
                  track_energy,
+                 track_valence,
                  artist_id,
                  artist_name,
+                 artist_genres,
                  album_id,
                  album_name,
                  album_label,
@@ -91,8 +95,10 @@ class Track(object):
         self.track_name = track_name
         self.track_bpm = track_bpm
         self.track_energy = track_energy
+        self.track_valence = track_valence
         self.artist_id = artist_id
         self.artist_name = artist_name
+        self.artist_genres = artist_genres
         self.album_id = album_id
         self.album_name = album_name
         self.album_label = album_label
@@ -107,8 +113,10 @@ class Track(object):
                   self.track_name,
                   self.track_bpm,
                   self.track_energy,
+                  self.track_valence,
                   self.artist_id,
                   self.artist_name,
+                  self.artist_genres,
                   self.album_id,
                   self.album_name,
                   self.album_label,
@@ -131,6 +139,7 @@ class HoergewohnheitenManager(object):
         self.owm = pyowm.OWM(settings.OPEN_WEATHER_MAP_API_KEY)
         self.audio_feature_cache = {}
         self.album_cache = {}
+        self.artist_cache = {}
 
     def get_temperature_and_weather_status(self):
         try:
@@ -155,8 +164,14 @@ class HoergewohnheitenManager(object):
             self.album_cache[album_id] = response
         return self.album_cache[album_id]
 
-    def _stringify_genres(self, genres):
-        return "|".join(genres) if genres else ''
+    def get_artist(self, artist_id):
+        if artist_id not in self.artist_cache:
+            response = self.client.artist(artist_id)
+            self.artist_cache[artist_id] = response
+        return self.artist_cache[artist_id]
+
+    def _stringify_lists(self, list_items):
+        return "|".join(list_items) if list_items else ''
 
     def create_tracks_from_response(self, response):
         tracks = []
@@ -169,23 +184,30 @@ class HoergewohnheitenManager(object):
             audio_feature = self.get_audio_feature(item['track']['id'])
             bpm = audio_feature['tempo']
             energy = audio_feature['energy']
+            valence = audio_feature['valence']
+
+            # Get artist information
+            artist = self.get_artist(item['track']['artists'][0]['id'])
+            artist_genres = self._stringify_lists(artist['genres'])
 
             # Get album information
             album = self.get_album(item['track']['album']['id'])
             label = album['label']
-            genres = self._stringify_genres(album['genres'])
+            album_genres = self._stringify_lists(album['genres'])
 
             track = Track(played_at=convert_played_at_to_datetime(item['played_at']),
                           track_id= item['track']['id'],
                           track_name=item['track']['name'],
                           track_bpm=bpm,
                           track_energy=energy,
+                          track_valence=valence,
                           artist_id=item['track']['artists'][0]['id'],
                           artist_name=item['track']['artists'][0]['name'],
+                          artist_genres=artist_genres,
                           album_id=item['track']['album']['id'],
                           album_name=item['track']['album']['name'],
                           album_label=label,
-                          album_genres=genres,
+                          album_genres=album_genres,
                           weather_temperature=temperature,
                           weather_status=weather_status)
             tracks.append(track)
