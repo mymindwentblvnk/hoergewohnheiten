@@ -2,24 +2,25 @@
 
 This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to receive your recent Spotify plays. The data is loaded to a CSV file and will automaticly be uploaded to a GitHub repository. To enhance data the scripts collects 
 
-* weather data from Open Weather Map ("What music do I like when it is raining?")
-* bpm and the energy of the played track (both taken from [Audio Features](https://developer.spotify.com/web-api/get-audio-features/) of the Web API)
-* label and genre of the album (both taken from [Album](https://developer.spotify.com/web-api/get-album/) endpoint of the Web API)
+* bpm, energy and valence of the played track (taken from [Audio Features](https://developer.spotify.com/web-api/get-audio-features/) of the Web API)
+* genre of the artist (taken from [Artist](https://developer.spotify.com/web-api/get-artist/) of the Web API)
+* label and genre of the album (both taken from [Album](https://developer.spotify.com/web-api/get-album/) of the Web API)
+* weather data (temperature and weather status) from Open Weather Map ("What music do I like when it is raining?")
 
 ## What The Data Looks Like
 
 You can see my data repository here [HoergewohnheitenData](https://github.com/michael-123/HoergewohnheitenData). The data looks like this:
 
-| played_at_as_utc | track_id | track_name | track_bpm | track_energy | artist_id | artist_name | album_id | album_name | album_label | album_genres | weather_temperature | weather_status |
+| played_at_as_utc | track_id | track_name | track_bpm | track_energy | track_valence | artist_id | artist_name | artist_genres | album_id | album_name | album_label | album_genres | weather_temperature | weather_status |
 |------------------|----------|------------|-----------|--------------|-----------|-------------|----------|------------|-------------|--------------|---------------------|----------------|
-| 2017-08-17 12:17:50.782000 | 0HqXBQtXt6quSgZDKkoflI | freisein | 120.077 | 0.78 | 73JMQvllbBsfDclpXOW4Wj | morten | 3tOvdq705xY714EgYcfuJi | freisein | Morten | | 25.0 | broken clouds |
-| 2017-08-17 12:18:30.297000 | 46F8PBRZTHR1IYuhKKuNl2 | Turn Off The Lights (Whos Afraid Of The Dark) - Original Mix | 123.998 | 0.892 | 7nqpEU6DCHkNtK1bYsyS3W | Kerri Chandler | 78Ob8dIG0FxLtVeZc6EYo6 | Turn Off The Lights (Whos Afraid Of The Dark) Remixes | Kaoz Theory | | 25.39 | broken clouds |
-| 2017-08-17 12:22:28.532000 | 16nWs4O6mbYl7K1KzriegE | Timeflys | 160.003 | 0.644| 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard | 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories | Mall Music Inc. | | 25.39 | broken clouds |
-| 2017-08-17 12:25:18.445000 | 7FdQfxvybWVBu5EGCNmyA5 | Lethal | 159.97 | 0.909 | 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard | 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories| Mall Music Inc. | | 25.39 | broken clouds |
-| 2017-08-17 12:29:09.414000 | 7BUVpPIzqKisolRNQJ0mug | In the Dark | 160.018 | 0.74 | 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard | 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories| Mall Music Inc. | | 25.39 | broken clouds |
-| 2017-08-17 12:30:27.159000 | 3RJgpnQdw7pGt88OLxjOyA | Always | 159.953 | 0.677 | 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard | 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories| Mall Music Inc. | | 25.39 | broken clouds |
-| 2017-08-17 12:34:09.047000 | 3Bym3y1VjgCmDxQx6hC5AX | All I Do | 160.951 | 0.525 | 1pYqeD9g56MUo0Oatod3eN | DJ Mastercard| 4HawD6YDlxaGzdFBjPqCvC | Corrupt Memories | Mall Music Inc. | | 25.39 | broken clouds |
-| 2017-08-17 12:54:28.433000 | 6cL7NCFSvqWrBH5r4mkvVV | Superman | 194.902 | 0.935| 7sVQKNtdP2NylxMgbNOJMM | Goldfinger | 2Fhk8LPPX8d14HwEKjmJ1O | The Best Of Goldfinger | Jive | | 25.4 | broken clouds|
+| 2017-08-10 16:57:51.210000|4tSLFGKiSO4O1d5aXJUpGJ|Doomsday|95.409|0.84|0.812|2pAWfrd7WFF3XhVt9GooDL|MF DOOM|alternative hip hop|chillhop|east coast hip hop|escape room|hardcore hip hop|hip hop|rap|underground hip hop|0h8L3oHRHSCF2lDDbGnpm1|Operation Doomsday: Original Version Remastered|Metal Face Records||| |
+| 2017-08-10 17:57:44.705000|4o0FNtV322Ixj9dqallluS|Bugatti|129.961|0.561|0.261|0aZu9zUfF2EgTHyBbZlW1C|LGoony|deep german hip hop|underground hip hop|2O1eye3JacqELubyVNzxfQ|Intergalactica|Airforce Luna||| |
+| 2017-08-11 11:54:33.055000|0p6O4QpOWXrSnbzYKRDy4L|Lieblingsmensch|88.012|0.351|0.556|2Q570lQPWiuP2dCOP69jO3|Remoe|deep german hip hop|2kh8DovYXyL7o3uJmuX6IT|Alles für die Fam|Alles für die Fam Records||| |
+| 2017-08-11 12:24:27.248000|4r7iDEGdW2Gw9hJlCbi5qL|Mi Negrita|117.954|0.4|0.579|1YZEoYFXx4AxVv13OiOPvZ|Devendra Banhart|chamber pop|folk christmas|folk-pop|freak folk|indie christmas|indie folk|indie pop|indie rock|indietronica|new weird america|1Z69PSnbIBojgF9NBJbKca|Mala|Nonesuch||| |
+| 2017-08-11 17:23:46.296000|3lB0GMiI5KxDbTOG8V3bOx|waves - Tame Impala Remix|108.024|0.894|0.53|360IAlyVv4PCEVjgyMZrxK|Miguel|dance pop|deep pop r&b|hip hop|hip pop|indie r&b|pop|pop rap|r&b|rap|trap music|urban contemporary|4sJXyIfwduIWFISb4iCq2f|Rogue Waves|ByStorm Entertainment/RCA Records||| |
+| 2017-08-14 08:53:47.297000|7ol59kVwq3DQyyjKZ2DRzy|Jungle|146.002|0.697|0.489|6zVFRTB0Y1whWyH7ZNmywf|Tash Sultana|deep australian indie|5fPbbwEgH8qX4uIrmPchYi|Notion|Lonely Lands Records||| |
+| 2017-08-18 07:25:42.455000|3B54sVLJ402zGa6Xm4YGNe|Unforgettable|97.985|0.769|0.75|6vXTefBL93Dj5IqAWq6OTv|French Montana|dwn trap|pop rap|rap|trap music|4c2p3TdN7NcQfCXyueCNnC|Jungle Rules|Bad Boy Entertainment/Epic Records||20.58|haze |
+
 
 ## What Questions Can Be Answered With This Data
 
