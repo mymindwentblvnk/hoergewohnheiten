@@ -37,7 +37,7 @@ def convert_played_at_from_csv_to_datetime(played_at):
 
 def convert_played_at_from_response_to_datetime(played_at):
     try:
-        convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ')
+        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ')
     except:
         # For the single moment where the played at time hits a full second
         return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
@@ -45,11 +45,13 @@ def convert_played_at_from_response_to_datetime(played_at):
 
 def get_last_imported_datetime_as_utc():
     csv_file_pattern = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)
-    for csv_file in glob.glob(csv_file_pattern):
+    for csv_file in sorted(glob.glob(csv_file_pattern), reverse=True):
         try:
+            print(csv_file)
             with open(csv_file, 'r') as f:
                 lines = f.readlines()
-                played_at = lines[-1].split(',')[0]
+                last_line = lines[-1]
+                played_at = last_line.split(',')[0]
                 dt = convert_played_at_from_csv_to_datetime(played_at)
                 return convert_datetime_to_utc_in_ms(dt)
         except (FileNotFoundError, IndexError):
