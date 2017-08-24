@@ -47,7 +47,6 @@ def get_last_imported_datetime_as_utc():
     csv_file_pattern = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)
     for csv_file in sorted(glob.glob(csv_file_pattern), reverse=True):
         try:
-            print(csv_file)
             with open(csv_file, 'r') as f:
                 lines = f.readlines()
                 last_line = lines[-1]
