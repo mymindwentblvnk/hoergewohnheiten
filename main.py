@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import os
-import pickle
+import glob
 
 from spotipy import Spotify
 import spotipy.util
@@ -18,34 +18,42 @@ MONTH = datetime.now().month
 CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,artist_genres,album_id,album_name,album_label,album_genres,weather_temperature,weather_status"
 
 
-def get_last_imported_datetime_from_tracks(tracks):
-    if tracks:
-        return max([t.played_at for t in tracks])
-
-
 def convert_datetime_to_utc_in_ms(dt):
     neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
     return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
 
 
-def convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
+def convert_played_at_to_datetime(played_at, date_format):
+    return datetime.strptime(played_at, date_format)
+
+
+def convert_played_at_from_csv_to_datetime(played_at):
     try:
-        return datetime.strptime(played_at, date_format)
+        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%d %H:%M:%S.%f')
+    except:
+        # For the single moment where the played at time hits a full second
+        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%d %H:%M:%S')
+
+
+def convert_played_at_from_response_to_datetime(played_at):
+    try:
+        convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ')
     except:
         # For the single moment where the played at time hits a full second
         return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
 
 
 def get_last_imported_datetime_as_utc():
-    try:
-        last_imported_datetime = pickle.load(open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'rb'))
-        return convert_datetime_to_utc_in_ms(last_imported_datetime)
-    except FileNotFoundError:
-        print("No last imported datetime found at {}.".format(settings.LAST_IMPORTED_DATETIME_FILE_PATH))
-
-
-def save_last_imported_datetime(last_imported_datetime):
-    pickle.dump(last_imported_datetime, open(settings.LAST_IMPORTED_DATETIME_FILE_PATH, 'wb'))
+    csv_file_pattern = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)
+    for csv_file in glob.glob(csv_file_pattern):
+        try:
+            with open(csv_file, 'r') as f:
+                lines = f.readlines()
+                played_at = lines[-1].split(',')[0]
+                dt = convert_played_at_from_csv_to_datetime(played_at)
+                return convert_datetime_to_utc_in_ms(dt)
+        except (FileNotFoundError, IndexError):
+            pass
 
 
 def pad_number(number):
@@ -195,7 +203,7 @@ class HoergewohnheitenManager(object):
             label = album['label']
             album_genres = self._stringify_lists(album['genres'])
 
-            track = Track(played_at=convert_played_at_to_datetime(item['played_at']),
+            track = Track(played_at=convert_played_at_from_response_to_datetime(item['played_at']),
                           track_id= item['track']['id'],
                           track_name=item['track']['name'],
                           track_bpm=bpm,
@@ -240,11 +248,6 @@ def main():
                                           YEAR,
                                           pad_number(MONTH))
         write_tracks_to_csv(tracks, file_path)
-
-        # Save last imported datetime
-        last_imported_datetime = get_last_imported_datetime_from_tracks(tracks)
-        save_last_imported_datetime(last_imported_datetime)
-
         git_push_csv(file_path)
 
     print(50 * "-")
