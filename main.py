@@ -136,6 +136,12 @@ class Track(object):
         return ",".join(escaped_fields)
 
 
+class EmptyDict(object):
+
+    def __getitem__(cls, key):
+        return ""
+
+
 class HoergewohnheitenManager(object):
 
     def __init__(self):
@@ -150,21 +156,27 @@ class HoergewohnheitenManager(object):
         self.album_cache = {}
         self.artist_cache = {}
 
-    def get_temperature_and_weather_status(self):
+    def get_weather(self):
         try:
             observation = self.owm.weather_at_id(settings.OPEN_WATHER_MAP_NUREMBERG_ID)
             weather = observation.get_weather()
             temperature = weather.get_temperature(unit='celsius')['temp']
             weather_status = weather.get_detailed_status()
-            return temperature, weather_status
+            return {
+                'temperature': temperature,
+                'weather_status': weather_status
+            }
         except:
             print("Weather could not be loaded.")
-            return '',''
+            return EmptyDict()
 
     def get_audio_feature(self, track_id):
         if track_id not in self.audio_feature_cache:
-            audio_feature = self.client.audio_features(track_id)
-            self.audio_feature_cache[track_id] = audio_feature[0]
+            audio_feature = self.client.audio_features(track_id)[0]
+            if audio_feature:  # Some tracks do not have audio features
+                self.audio_feature_cache[track_id] = audio_feature
+            else:
+                return EmptyDict()
         return self.audio_feature_cache[track_id]
 
     def get_album(self, album_id):
@@ -180,13 +192,15 @@ class HoergewohnheitenManager(object):
         return self.artist_cache[artist_id]
 
     def _stringify_lists(self, list_items):
-        return "|".join(list_items) if list_items else ''
+        return "|".join(list_items) if list_items else ""
 
     def create_tracks_from_response(self, response):
         tracks = []
 
         # Get weather for this run
-        temperature, weather_status = self.get_temperature_and_weather_status()
+        weather  = self.get_weather()
+        temperature = weather['temperature']
+        weather_status = weather['weather_status']
 
         for item in response['items']:
             # Get audio features
