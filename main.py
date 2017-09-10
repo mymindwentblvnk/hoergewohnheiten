@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 import os
 import glob
-from collections import OrderedDict
 import json
 
 from git import Repo
 import pandas
+
 import settings
 
 from connections import OWMConnection, SpotifyConnection
@@ -108,7 +108,6 @@ class HoergewohnheitenStats(object):
         self.top_n = 15
 
     def top_tracks(self):
-        result = OrderedDict()
         result = {}
         top_tracks = self.data_frame.groupby('track_id').size().sort_values(ascending=False)[:self.top_n]
         for index, track_id in enumerate(top_tracks.keys(), 1):
@@ -127,7 +126,6 @@ class HoergewohnheitenStats(object):
         return result
 
     def top_artists(self):
-        result = OrderedDict()
         result = {}
         top_artists = self.data_frame.groupby('artist_id').size().sort_values(ascending=False)[:self.top_n]
         for index, artist_id in enumerate(top_artists.keys(), 1):
@@ -140,7 +138,6 @@ class HoergewohnheitenStats(object):
         return result
 
     def top_albums(self):
-        result = OrderedDict()
         result = {}
         top_albums = self.data_frame.groupby('album_id').size().sort_values(ascending=False)[:self.top_n]
         for index, album_id in enumerate(top_albums.keys(), 1):
@@ -239,7 +236,7 @@ class HoergewohnheitenManager(object):
             print("Writing stats to file {}.".format(self.json_file_path))
             self.write_stats_to_json(stats)
             print("Pushing file(s) to GitHub.")
-            self._git_push_files()
+            self.git_push_files()
 
 
 if __name__ == '__main__':
