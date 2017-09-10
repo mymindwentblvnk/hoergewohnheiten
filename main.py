@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 import os
 import glob
+from collections import OrderedDict
+import json
 
 from git import Repo
-
 import pandas
-
 import settings
 
 from connections import OWMConnection, SpotifyConnection
@@ -100,65 +100,88 @@ def pad_number(number):
     return "0{}".format(number)[-2:]
 
 
-def write_tracks_to_csv(tracks, csv_file_path):
-    print("Writing file {}.".format(csv_file_path))
-
-    initial_write = False if os.path.exists(csv_file_path) else True
-
-    with open(csv_file_path, 'a') as f:
-        if initial_write:
-            f.write("{}\n".format(CSV_HEADER))
-        for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
-            f.write("{}\n".format(track.csv_string))
-
-
-def git_push_csv(csv_file_path):
-    print("Pushing file to GitHub.")
-    repo = Repo(settings.PATH_TO_DATA_REPO)
-    repo.index.add([csv_file_path])
-    repo.index.commit("Updating {}".format(csv_file_path.split('/')[-1]))
-    repo.remote('origin').push()
-
-
 class HoergewohnheitenStats(object):
 
     def __init__(self, csv_file_path):
         self.spotify = SpotifyConnection()
         self.data_frame = pandas.read_csv(csv_file_path)
+        self.top_n = 15
 
-    @property
     def top_tracks(self):
-        top_tracks = data_frame.groupby('track_id').size().sort_values(ascending=False)[:TOP_N]
-        for track_id in top_tracks.keys():
-            pass
+        result = OrderedDict()
+        result = {}
+        top_tracks = self.data_frame.groupby('track_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, track_id in enumerate(top_tracks.keys(), 1):
+            track = self.spotify.get_track(track_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_tracks[track_id])
+            result[index]['track'] = {}
+            result[index]['track']['id'] = track.track_id
+            result[index]['track']['name'] = track.track_name
+            result[index]['artist'] = {}
+            result[index]['artist']['id'] = track.artist.artist_id
+            result[index]['artist']['name'] = track.artist.artist_name
+            result[index]['album'] = {}
+            result[index]['album']['id'] = track.album.album_id
+            result[index]['album']['name'] = track.album.album_name
+        return result
 
-    @property
     def top_artists(self):
-        top_artists = data_frame.groupby('artist_id').size().sort_values(ascending=False)[:TOP_N]
+        result = OrderedDict()
+        result = {}
+        top_artists = self.data_frame.groupby('artist_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, artist_id in enumerate(top_artists.keys(), 1):
+            artist = self.spotify.get_artist(artist_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_artists[artist_id])
+            result[index]['artist'] = {}
+            result[index]['artist']['id'] = artist.artist_id
+            result[index]['artist']['name'] = artist.artist_name
+        return result
+
+    def top_albums(self):
+        result = OrderedDict()
+        result = {}
+        top_albums = self.data_frame.groupby('album_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, album_id in enumerate(top_albums.keys(), 1):
+            album = self.spotify.get_album(album_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_albums[album_id])
+            result[index]['album'] = {}
+            result[index]['album']['id'] = album.album_id
+            result[index]['album']['name'] = album.album_name
+            result[index]['album']['artist'] = {}
+            result[index]['album']['artist']['id'] = album.artist.artist_id
+            result[index]['album']['artist']['name'] = album.artist.artist_name
+        return result
 
     @property
-    def top_albums(self):
-        top_albums = data_frame.groupby('album_id').size().sort_values(ascending=False)[:TOP_N]
-
-    def write_markdown(self):
-        pass
+    def as_dict(self):
+        return {
+            'top_tracks': self.top_tracks(),
+            'top_artists': self.top_artists(),
+            'top_albums': self.top_albums()
+        }
 
 
 class HoergewohnheitenManager(object):
 
-    def __init__(self, year, month):
-        self.year = year
-        self.month = month
+    def __init__(self, year=None, month=None):
+        self.year = year if year else datetime.now().year
+        self.month = month if month else datetime.now().month
         self.spotify = SpotifyConnection()
         self.weather = OWMConnection().get_weather()
         self.csv_file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
                                                    self.year,
                                                    pad_number(self.month))
+        self.json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO,
+                                                     self.year,
+                                                     pad_number(self.month))
 
     def _stringify_lists(self, list_items):
         return "|".join(list_items) if list_items else ""
 
-    def track_to_played_track(self, track):
+    def _track_to_played_track(self, track):
         played_track = PlayedTrack(played_at=track.played_at,
                                    track_id=track.track_id,
                                    track_name=track.track_name,
@@ -176,19 +199,47 @@ class HoergewohnheitenManager(object):
                                    weather_status=self.weather.status)
         return played_track
 
-    def process_tracks(self, last_imported_datetime):
+    def fetch_newest_played_tracks(self, last_imported_datetime):
         tracks = self.spotify.get_recently_played_tracks(after=last_imported_datetime)
-        played_tracks = [self.track_to_played_track(track) for track in tracks]
+        played_tracks = [self._track_to_played_track(track) for track in tracks]
+        return played_tracks
 
-        print("Loaded last {} played tracks.".format(len(played_tracks)))
+    def fetch_stats(self):
+        s = HoergewohnheitenStats(self.csv_file_path)
+        return s.as_dict
 
-        if played_tracks:
-            write_tracks_to_csv(played_tracks, self.csv_file_path)
-            git_push_csv(self.csv_file_path)
+    def git_push_files(self):
+        file_paths = [f for f in [self.csv_file_path, self.json_file_path] if os.path.exists(f)]
+        repo = Repo(settings.PATH_TO_DATA_REPO)
+        repo.index.add(file_paths)
+        repo.index.commit("Updating files.")
+        repo.remote('origin').push()
 
-    def process_stats(self):
-        stats = HoergewohnheitenStats(self.csv_file_path)
-        pass
+    def write_tracks_to_csv(self, tracks):
+        initial_write = False if os.path.exists(self.csv_file_path) else True
+        with open(self.csv_file_path, 'a') as f:
+            if initial_write:
+                f.write("{}\n".format(CSV_HEADER))
+            for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
+                f.write("{}\n".format(track.csv_string))
+
+    def write_stats_to_json(self, stats):
+        with open(self.json_file_path, 'w') as f:
+            json.dump(stats, f, sort_keys=True, indent=4)
+
+    def process(self, last_imported_datetime):
+        print("Fetching new played tracks.")
+        tracks = self.fetch_newest_played_tracks(last_imported_datetime)
+        print("{} tracks found.".format(len(tracks)))
+        if tracks:
+            print("Writing track(s) to file {}.".format(self.csv_file_path))
+            self.write_tracks_to_csv(tracks)
+            print("Fetching stats.")
+            stats = self.fetch_stats()
+            print("Writing stats to file {}.".format(self.json_file_path))
+            self.write_stats_to_json(stats)
+            print("Pushing file(s) to GitHub.")
+            self._git_push_files()
 
 
 if __name__ == '__main__':
@@ -198,10 +249,8 @@ if __name__ == '__main__':
     # Get last imported datetime
     last_imported_datetime_as_utc = get_last_imported_datetime_as_utc()
 
-    mgr = HoergewohnheitenManager(year=now.year, month=now.month)
-    # Process tracks
-    mgr.process_tracks(last_imported_datetime=last_imported_datetime_as_utc)
-    # Process stats
-    mgr.process_stats()
+    # Process
+    mgr = HoergewohnheitenManager()
+    mgr.process(last_imported_datetime=last_imported_datetime_as_utc)
 
     print("Bye.")

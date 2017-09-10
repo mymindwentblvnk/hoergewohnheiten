@@ -26,11 +26,12 @@ class AudioFeature(object):
 
 class Album(object):
 
-    def __init__(self, album_id, album_name, label, album_genres):
+    def __init__(self, album_id, album_name, label, album_genres, artist):
         self.album_id = album_id
         self.album_name = album_name
         self.label = label
         self.album_genres = album_genres
+        self.artist = artist
 
 
 class Artist(object):
@@ -43,7 +44,7 @@ class Artist(object):
 
 class Track(object):
 
-    def __init__(self, track_id, track_name, artist, album, audio_feature, played_at):
+    def __init__(self, track_id, track_name, artist, album, audio_feature=None, played_at=None):
         self.track_id = track_id
         self.track_name = track_name
         self.artist = artist
@@ -64,6 +65,7 @@ class SpotifyConnection(object):
         self.album_cache = {}
         self.artist_cache = {}
         self.audio_feature_cache = {}
+        self.track_cache = {}
 
     def get_audio_feature(self, track_id):
         if track_id not in self.audio_feature_cache:
@@ -80,10 +82,12 @@ class SpotifyConnection(object):
     def get_album(self, album_id):
         if album_id not in self.album_cache:
             response = self.client.album(album_id)
+            artist = self.get_artist(response['artists'][0]['id'])
             album = Album(album_id=response['id'],
                           album_name=response['name'],
                           label=response['label'],
-                          album_genres=response['genres'])
+                          album_genres=response['genres'],
+                          artist=artist)
             self.album_cache[album_id] = album
         return self.album_cache[album_id]
 
@@ -95,6 +99,18 @@ class SpotifyConnection(object):
                             artist_genres=response['genres'])
             self.artist_cache[artist_id] = artist
         return self.artist_cache[artist_id]
+
+    def get_track(self, track_id):
+        if track_id not in self.track_cache:
+            response = self.client.track(track_id)
+            artist = self.get_artist(response['artists'][0]['id'])
+            album = self.get_album(response['album']['id'])
+            track = Track(track_id=track_id,
+                          track_name=response['name'],
+                          artist=artist,
+                          album=album)
+            self.track_cache[track_id] = track
+        return self.track_cache[track_id]
 
     def _get_tracks_from_response(self, response):
         tracks = []
