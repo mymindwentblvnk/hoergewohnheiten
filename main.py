@@ -1,21 +1,72 @@
 from datetime import datetime, timedelta
 import os
 import glob
-
-from spotipy import Spotify
-import spotipy.util
-
-import pyowm
+from collections import OrderedDict
+import json
 
 from git import Repo
-
+import pandas
 import settings
 
+from connections import OWMConnection, SpotifyConnection
 
-YEAR = datetime.now().year
-MONTH = datetime.now().month
 
 CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,artist_genres,album_id,album_name,album_label,album_genres,weather_temperature,weather_status"
+
+
+class PlayedTrack(object):
+
+    def __init__(self,
+                 played_at,
+                 track_id,
+                 track_name,
+                 track_tempo,
+                 track_energy,
+                 track_valence,
+                 artist_id,
+                 artist_name,
+                 artist_genres,
+                 album_id,
+                 album_name,
+                 album_label,
+                 album_genres,
+                 weather_temperature,
+                 weather_status):
+        self.played_at = played_at
+        self.track_id = track_id
+        self.track_name = track_name
+        self.track_tempo = track_tempo
+        self.track_energy = track_energy
+        self.track_valence = track_valence
+        self.artist_id = artist_id
+        self.artist_name = artist_name
+        self.artist_genres = artist_genres
+        self.album_id = album_id
+        self.album_name = album_name
+        self.album_label = album_label
+        self.album_genres = album_genres
+        self.weather_temperature=weather_temperature
+        self.weather_status=weather_status
+
+    @property
+    def csv_string(self):
+        fields = [self.played_at,
+                  self.track_id,
+                  self.track_name,
+                  self.track_tempo,
+                  self.track_energy,
+                  self.track_valence,
+                  self.artist_id,
+                  self.artist_name,
+                  self.artist_genres,
+                  self.album_id,
+                  self.album_name,
+                  self.album_label,
+                  self.album_genres,
+                  self.weather_temperature,
+                  self.weather_status]
+        escaped_fields = [str(field).replace(',', '').replace('\'', '').replace('\"', '') for field in fields]
+        return ",".join(escaped_fields)
 
 
 def convert_datetime_to_utc_in_ms(dt):
@@ -23,24 +74,12 @@ def convert_datetime_to_utc_in_ms(dt):
     return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
 
 
-def convert_played_at_to_datetime(played_at, date_format):
-    return datetime.strptime(played_at, date_format)
-
-
 def convert_played_at_from_csv_to_datetime(played_at):
     try:
-        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%d %H:%M:%S.%f')
+        return datetime.strptime(played_at, '%Y-%m-%d %H:%M:%S.%f')
     except:
         # For the single moment where the played at time hits a full second
-        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%d %H:%M:%S')
-
-
-def convert_played_at_from_response_to_datetime(played_at):
-    try:
-        return convert_played_at_to_datetime(played_at, date_format='%Y-%m-%dT%H:%M:%S.%fZ')
-    except:
-        # For the single moment where the played at time hits a full second
-        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
+        return datetime.strptime(played_at, '%Y-%m-%d %H:%M:%S')
 
 
 def get_last_imported_datetime_as_utc():
@@ -61,213 +100,157 @@ def pad_number(number):
     return "0{}".format(number)[-2:]
 
 
-def write_tracks_to_csv(tracks, csv_file_path):
-    print("Writing file {}.".format(csv_file_path))
+class HoergewohnheitenStats(object):
 
-    initial_write = False if os.path.exists(csv_file_path) else True
+    def __init__(self, csv_file_path):
+        self.spotify = SpotifyConnection()
+        self.data_frame = pandas.read_csv(csv_file_path)
+        self.top_n = 15
 
-    with open(csv_file_path, 'a') as f:
-        if initial_write:
-            f.write("{}\n".format(CSV_HEADER))
-        for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
-            f.write("{}\n".format(track.csv_string))
+    def top_tracks(self):
+        result = OrderedDict()
+        result = {}
+        top_tracks = self.data_frame.groupby('track_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, track_id in enumerate(top_tracks.keys(), 1):
+            track = self.spotify.get_track(track_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_tracks[track_id])
+            result[index]['track'] = {}
+            result[index]['track']['id'] = track.track_id
+            result[index]['track']['name'] = track.track_name
+            result[index]['artist'] = {}
+            result[index]['artist']['id'] = track.artist.artist_id
+            result[index]['artist']['name'] = track.artist.artist_name
+            result[index]['album'] = {}
+            result[index]['album']['id'] = track.album.album_id
+            result[index]['album']['name'] = track.album.album_name
+        return result
 
+    def top_artists(self):
+        result = OrderedDict()
+        result = {}
+        top_artists = self.data_frame.groupby('artist_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, artist_id in enumerate(top_artists.keys(), 1):
+            artist = self.spotify.get_artist(artist_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_artists[artist_id])
+            result[index]['artist'] = {}
+            result[index]['artist']['id'] = artist.artist_id
+            result[index]['artist']['name'] = artist.artist_name
+        return result
 
-def git_push_csv(csv_file_path):
-    print("Pushing file to GitHub.")
-    repo = Repo(settings.PATH_TO_DATA_REPO)
-    repo.index.add([csv_file_path])
-    repo.index.commit("Updating {}".format(csv_file_path.split('/')[-1]))
-    repo.remote('origin').push()
-
-
-class Track(object):
-
-    def __init__(self,
-                 played_at,
-                 track_id,
-                 track_name,
-                 track_bpm,
-                 track_energy,
-                 track_valence,
-                 artist_id,
-                 artist_name,
-                 artist_genres,
-                 album_id,
-                 album_name,
-                 album_label,
-                 album_genres,
-                 weather_temperature,
-                 weather_status):
-        self.played_at = played_at
-        self.track_id = track_id
-        self.track_name = track_name
-        self.track_bpm = track_bpm
-        self.track_energy = track_energy
-        self.track_valence = track_valence
-        self.artist_id = artist_id
-        self.artist_name = artist_name
-        self.artist_genres = artist_genres
-        self.album_id = album_id
-        self.album_name = album_name
-        self.album_label = album_label
-        self.album_genres = album_genres
-        self.weather_temperature=weather_temperature
-        self.weather_status=weather_status
+    def top_albums(self):
+        result = OrderedDict()
+        result = {}
+        top_albums = self.data_frame.groupby('album_id').size().sort_values(ascending=False)[:self.top_n]
+        for index, album_id in enumerate(top_albums.keys(), 1):
+            album = self.spotify.get_album(album_id)
+            result[index] = {}
+            result[index]['plays'] = int(top_albums[album_id])
+            result[index]['album'] = {}
+            result[index]['album']['id'] = album.album_id
+            result[index]['album']['name'] = album.album_name
+            result[index]['album']['artist'] = {}
+            result[index]['album']['artist']['id'] = album.artist.artist_id
+            result[index]['album']['artist']['name'] = album.artist.artist_name
+        return result
 
     @property
-    def csv_string(self):
-        fields = [self.played_at,
-                  self.track_id,
-                  self.track_name,
-                  self.track_bpm,
-                  self.track_energy,
-                  self.track_valence,
-                  self.artist_id,
-                  self.artist_name,
-                  self.artist_genres,
-                  self.album_id,
-                  self.album_name,
-                  self.album_label,
-                  self.album_genres,
-                  self.weather_temperature,
-                  self.weather_status]
-        escaped_fields = [str(field).replace(',', '').replace('\'', '').replace('\"', '') for field in fields]
-        return ",".join(escaped_fields)
-
-
-class EmptyDict(object):
-
-    def __getitem__(cls, key):
-        return ""
+    def as_dict(self):
+        return {
+            'top_tracks': self.top_tracks(),
+            'top_artists': self.top_artists(),
+            'top_albums': self.top_albums()
+        }
 
 
 class HoergewohnheitenManager(object):
 
-    def __init__(self):
-        token = spotipy.util.prompt_for_user_token(settings.SPOTIFY_USER_NAME,
-                                                   scope='user-read-recently-played',
-                                                   client_id=settings.SPOTIFY_CLIENT_ID,
-                                                   client_secret=settings.SPOTIFY_CLIENT_SECRET,
-                                                   redirect_uri=settings.SPOTIFY_REDIRECT_URI)
-        self.client = Spotify(auth=token)
-        self.owm = pyowm.OWM(settings.OPEN_WEATHER_MAP_API_KEY)
-        self.audio_feature_cache = {}
-        self.album_cache = {}
-        self.artist_cache = {}
-
-    def get_weather(self):
-        try:
-            observation = self.owm.weather_at_id(settings.OPEN_WATHER_MAP_NUREMBERG_ID)
-            weather = observation.get_weather()
-            temperature = weather.get_temperature(unit='celsius')['temp']
-            weather_status = weather.get_detailed_status()
-            return {
-                'temperature': temperature,
-                'weather_status': weather_status
-            }
-        except:
-            print("Weather could not be loaded.")
-            return EmptyDict()
-
-    def get_audio_feature(self, track_id):
-        if track_id not in self.audio_feature_cache:
-            audio_feature = self.client.audio_features(track_id)[0]
-            if audio_feature:  # Some tracks do not have audio features
-                self.audio_feature_cache[track_id] = audio_feature
-            else:
-                return EmptyDict()
-        return self.audio_feature_cache[track_id]
-
-    def get_album(self, album_id):
-        if album_id not in self.album_cache:
-            response = self.client.album(album_id)
-            self.album_cache[album_id] = response
-        return self.album_cache[album_id]
-
-    def get_artist(self, artist_id):
-        if artist_id not in self.artist_cache:
-            response = self.client.artist(artist_id)
-            self.artist_cache[artist_id] = response
-        return self.artist_cache[artist_id]
+    def __init__(self, year=None, month=None):
+        self.year = year if year else datetime.now().year
+        self.month = month if month else datetime.now().month
+        self.spotify = SpotifyConnection()
+        self.weather = OWMConnection().get_weather()
+        self.csv_file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
+                                                   self.year,
+                                                   pad_number(self.month))
+        self.json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO,
+                                                     self.year,
+                                                     pad_number(self.month))
 
     def _stringify_lists(self, list_items):
         return "|".join(list_items) if list_items else ""
 
-    def create_tracks_from_response(self, response):
-        tracks = []
+    def _track_to_played_track(self, track):
+        played_track = PlayedTrack(played_at=track.played_at,
+                                   track_id=track.track_id,
+                                   track_name=track.track_name,
+                                   track_tempo=track.audio_feature.tempo,
+                                   track_energy=track.audio_feature.energy,
+                                   track_valence=track.audio_feature.valence,
+                                   artist_id=track.artist.artist_id,
+                                   artist_name=track.artist.artist_name,
+                                   artist_genres=self._stringify_lists(track.artist.artist_genres),
+                                   album_id=track.album.album_id,
+                                   album_name=track.album.album_name,
+                                   album_label=track.album.label,
+                                   album_genres=self._stringify_lists(track.album.album_genres),
+                                   weather_temperature=self.weather.temperature,
+                                   weather_status=self.weather.status)
+        return played_track
 
-        # Get weather for this run
-        weather  = self.get_weather()
-        temperature = weather['temperature']
-        weather_status = weather['weather_status']
+    def fetch_newest_played_tracks(self, last_imported_datetime):
+        tracks = self.spotify.get_recently_played_tracks(after=last_imported_datetime)
+        played_tracks = [self._track_to_played_track(track) for track in tracks]
+        return played_tracks
 
-        for item in response['items']:
-            # Get audio features
-            audio_feature = self.get_audio_feature(item['track']['id'])
-            bpm = audio_feature['tempo']
-            energy = audio_feature['energy']
-            valence = audio_feature['valence']
+    def fetch_stats(self):
+        s = HoergewohnheitenStats(self.csv_file_path)
+        return s.as_dict
 
-            # Get artist information
-            artist = self.get_artist(item['track']['artists'][0]['id'])
-            artist_genres = self._stringify_lists(artist['genres'])
+    def git_push_files(self):
+        file_paths = [f for f in [self.csv_file_path, self.json_file_path] if os.path.exists(f)]
+        repo = Repo(settings.PATH_TO_DATA_REPO)
+        repo.index.add(file_paths)
+        repo.index.commit("Updating files.")
+        repo.remote('origin').push()
 
-            # Get album information
-            album = self.get_album(item['track']['album']['id'])
-            label = album['label']
-            album_genres = self._stringify_lists(album['genres'])
+    def write_tracks_to_csv(self, tracks):
+        initial_write = False if os.path.exists(self.csv_file_path) else True
+        with open(self.csv_file_path, 'a') as f:
+            if initial_write:
+                f.write("{}\n".format(CSV_HEADER))
+            for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
+                f.write("{}\n".format(track.csv_string))
 
-            track = Track(played_at=convert_played_at_from_response_to_datetime(item['played_at']),
-                          track_id= item['track']['id'],
-                          track_name=item['track']['name'],
-                          track_bpm=bpm,
-                          track_energy=energy,
-                          track_valence=valence,
-                          artist_id=item['track']['artists'][0]['id'],
-                          artist_name=item['track']['artists'][0]['name'],
-                          artist_genres=artist_genres,
-                          album_id=item['track']['album']['id'],
-                          album_name=item['track']['album']['name'],
-                          album_label=label,
-                          album_genres=album_genres,
-                          weather_temperature=temperature,
-                          weather_status=weather_status)
-            tracks.append(track)
-        return tracks
+    def write_stats_to_json(self, stats):
+        with open(self.json_file_path, 'w') as f:
+            json.dump(stats, f, sort_keys=True, indent=4)
 
-    def get_recently_played_tracks(self, limit=50, after=None):
-        tracks = []
-        response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        tracks.extend(self.create_tracks_from_response(response))
-        if 'next' in response:
-            response = self.client.next(response)
-            tracks.extend(self.create_tracks_from_response(response))
-        return tracks
+    def process(self, last_imported_datetime):
+        print("Fetching new played tracks.")
+        tracks = self.fetch_newest_played_tracks(last_imported_datetime)
+        print("{} tracks found.".format(len(tracks)))
+        if tracks:
+            print("Writing track(s) to file {}.".format(self.csv_file_path))
+            self.write_tracks_to_csv(tracks)
+            print("Fetching stats.")
+            stats = self.fetch_stats()
+            print("Writing stats to file {}.".format(self.json_file_path))
+            self.write_stats_to_json(stats)
+            print("Pushing file(s) to GitHub.")
+            self._git_push_files()
 
 
-def main():
-    print("Starting run at {}".format(datetime.now()))
-    print(50 * "-")
+if __name__ == '__main__':
+    now = datetime.now()
+    print("Starting run at {}".format(now))
 
     # Get last imported datetime
     last_imported_datetime_as_utc = get_last_imported_datetime_as_utc()
 
-    # Load tracks
+    # Process
     mgr = HoergewohnheitenManager()
-    tracks = mgr.get_recently_played_tracks(after=last_imported_datetime_as_utc)
-    print("Loaded last {} played tracks.".format(len(tracks)))
+    mgr.process(last_imported_datetime=last_imported_datetime_as_utc)
 
-    if tracks:
-        file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
-                                          YEAR,
-                                          pad_number(MONTH))
-        write_tracks_to_csv(tracks, file_path)
-        git_push_csv(file_path)
-
-    print(50 * "-")
     print("Bye.")
-
-
-if __name__ == '__main__':
-    main()
