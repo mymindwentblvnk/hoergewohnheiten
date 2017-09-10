@@ -240,8 +240,7 @@ class HoergewohnheitenManager(object):
 
 
 if __name__ == '__main__':
-    now = datetime.now()
-    print("Starting run at {}".format(now))
+    print("Starting run at {}".format(datetime.now()))
 
     # Get last imported datetime
     last_imported_datetime_as_utc = get_last_imported_datetime_as_utc()
