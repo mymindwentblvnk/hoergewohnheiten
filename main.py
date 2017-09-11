@@ -152,12 +152,16 @@ class HoergewohnheitenStats(object):
             result[index]['album']['artist']['name'] = album.artist.artist_name
         return result
 
+    def plays(self):
+        return len(self.data_frame)
+
     @property
     def as_dict(self):
         return {
             'top_tracks': self.top_tracks(),
             'top_artists': self.top_artists(),
-            'top_albums': self.top_albums()
+            'top_albums': self.top_albums(),
+            'plays': self.plays()
         }
 
 
