@@ -4,7 +4,7 @@ import glob
 import json
 
 from git import Repo
-import pandas
+import pandas as pd
 
 import settings
 
@@ -104,8 +104,13 @@ class HoergewohnheitenStats(object):
 
     def __init__(self, csv_file_path):
         self.spotify = SpotifyConnection()
-        self.data_frame = pandas.read_csv(csv_file_path)
+        self.data_frame = pd.read_csv(csv_file_path)
+        self.times = self._get_times()
         self.top_n = 15
+
+    def _get_times(self):
+        times = pd.to_datetime(self.data_frame.played_at_as_utc)
+        return times + pd.Timedelta('{}:00:00'.format(pad_number(settings.HOURS_FROM_UTC)))
 
     def top_tracks(self):
         result = {}
@@ -166,24 +171,21 @@ class HoergewohnheitenStats(object):
 
     def bpm_by_hour_of_day(self):
         result = {}
-        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
-        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_bpm'].mean()
+        mean_by_hour_of_day = self.data_frame.groupby([self.times.dt.hour])['track_bpm'].mean()
         for hour in mean_by_hour_of_day.keys():
             result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
         return result
 
     def energy_by_hour_of_day(self):
         result = {}
-        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
-        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_energy'].mean()
+        mean_by_hour_of_day = self.data_frame.groupby([self.times.dt.hour])['track_energy'].mean()
         for hour in mean_by_hour_of_day.keys():
             result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
         return result
 
     def valence_by_hour_of_day(self):
         result = {}
-        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
-        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_valence'].mean()
+        mean_by_hour_of_day = self.data_frame.groupby([self.times.dt.hour])['track_valence'].mean()
         for hour in mean_by_hour_of_day.keys():
             result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
         return result
@@ -191,16 +193,16 @@ class HoergewohnheitenStats(object):
     @property
     def as_dict(self):
         return {
-            'top_tracks': self.top_tracks(),
-            'top_artists': self.top_artists(),
-            'top_albums': self.top_albums(),
-            'plays': self.plays(),
             'avg_bpm': self.bpm_mean(),
             'avg_energy': self.energy_mean(),
             'avg_valence': self.valence_mean(),
             'by_hour_bpm': self.bpm_by_hour_of_day(),
             'by_hour_energy': self.energy_by_hour_of_day(),
             'by_hour_valence': self.valence_by_hour_of_day(),
+            'plays': self.plays(),
+            'top_tracks': self.top_tracks(),
+            'top_artists': self.top_artists(),
+            'top_albums': self.top_albums(),
         }
 
 
