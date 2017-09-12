@@ -155,13 +155,52 @@ class HoergewohnheitenStats(object):
     def plays(self):
         return len(self.data_frame)
 
+    def bpm_mean(self):
+        return round(self.data_frame['track_bpm'].mean(), 2)
+
+    def energy_mean(self):
+        return round(self.data_frame['track_energy'].mean(), 2)
+
+    def valence_mean(self):
+        return round(self.data_frame['track_valence'].mean(), 2)
+
+    def bpm_by_hour_of_day(self):
+        result = {}
+        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
+        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_bpm'].mean()
+        for hour in mean_by_hour_of_day.keys():
+            result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
+        return result
+
+    def energy_by_hour_of_day(self):
+        result = {}
+        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
+        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_energy'].mean()
+        for hour in mean_by_hour_of_day.keys():
+            result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
+        return result
+
+    def valence_by_hour_of_day(self):
+        result = {}
+        times = pandas.to_datetime(self.data_frame.played_at_as_utc)
+        mean_by_hour_of_day = self.data_frame.groupby([times.dt.hour])['track_valence'].mean()
+        for hour in mean_by_hour_of_day.keys():
+            result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
+        return result
+
     @property
     def as_dict(self):
         return {
             'top_tracks': self.top_tracks(),
             'top_artists': self.top_artists(),
             'top_albums': self.top_albums(),
-            'plays': self.plays()
+            'plays': self.plays(),
+            'avg_bpm': self.bpm_mean(),
+            'avg_energy': self.energy_mean(),
+            'avg_valence': self.valence_mean(),
+            'by_hour_bpm': self.bpm_by_hour_of_day(),
+            'by_hour_energy': self.energy_by_hour_of_day(),
+            'by_hour_valence': self.valence_by_hour_of_day(),
         }
 
 
