@@ -209,10 +209,13 @@ class HoergewohnheitenManager(object):
         s = HoergewohnheitenStats(self.csv_file_path)
         return s.as_dict
 
-    def git_push_files(self):
-        file_paths = [f for f in [self.csv_file_path, self.json_file_path] if os.path.exists(f)]
+    def git_push_files(self, file_paths=None):
+        if file_paths:
+            paths = [f for f in file_paths if os.path.exists(f)]
+        else:
+            paths = [f for f in [self.csv_file_path, self.json_file_path] if os.path.exists(f)]
         repo = Repo(settings.PATH_TO_DATA_REPO)
-        repo.index.add(file_paths)
+        repo.index.add(paths)
         repo.index.commit("Updating files.")
         repo.remote('origin').push()
 
