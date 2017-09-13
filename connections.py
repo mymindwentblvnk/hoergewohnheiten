@@ -26,20 +26,22 @@ class AudioFeature(object):
 
 class Album(object):
 
-    def __init__(self, album_id, album_name, label, album_genres, artist):
+    def __init__(self, album_id, album_name, label, album_genres, cover_url, artist):
         self.album_id = album_id
         self.album_name = album_name
         self.label = label
         self.album_genres = album_genres
+        self.cover_url = cover_url
         self.artist = artist
 
 
 class Artist(object):
 
-    def __init__(self, artist_id, artist_name, artist_genres):
+    def __init__(self, artist_id, artist_name, artist_genres, artist_picture_url):
         self.artist_id = artist_id
         self.artist_name = artist_name
         self.artist_genres = artist_genres
+        self.artist_picture_url = artist_picture_url
 
 
 class Track(object):
@@ -67,6 +69,12 @@ class SpotifyConnection(object):
         self.audio_feature_cache = {}
         self.track_cache = {}
 
+    def _get_image_url_from_response(self, response):
+        try:
+            return response['images'][0]['url']
+        except IndexError:
+            pass
+
     def get_audio_feature(self, track_id):
         if track_id not in self.audio_feature_cache:
             response = self.client.audio_features(track_id)[0]
@@ -87,6 +95,7 @@ class SpotifyConnection(object):
                           album_name=response['name'],
                           label=response['label'],
                           album_genres=response['genres'],
+                          cover_url=self._get_image_url_from_response(response),
                           artist=artist)
             self.album_cache[album_id] = album
         return self.album_cache[album_id]
@@ -96,7 +105,8 @@ class SpotifyConnection(object):
             response = self.client.artist(artist_id)
             artist = Artist(artist_id=response['id'],
                             artist_name=response['name'],
-                            artist_genres=response['genres'])
+                            artist_genres=response['genres'],
+                            artist_picture_url=self._get_image_url_from_response(response))
             self.artist_cache[artist_id] = artist
         return self.artist_cache[artist_id]
 

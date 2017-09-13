@@ -125,9 +125,11 @@ class HoergewohnheitenStats(object):
             result[index]['artist'] = {}
             result[index]['artist']['id'] = track.artist.artist_id
             result[index]['artist']['name'] = track.artist.artist_name
+            result[index]['artist']['picture'] = track.artist.artist_picture_url
             result[index]['album'] = {}
             result[index]['album']['id'] = track.album.album_id
             result[index]['album']['name'] = track.album.album_name
+            result[index]['album']['cover'] = track.album.cover_url
         return result
 
     def top_artists(self):
@@ -140,6 +142,7 @@ class HoergewohnheitenStats(object):
             result[index]['artist'] = {}
             result[index]['artist']['id'] = artist.artist_id
             result[index]['artist']['name'] = artist.artist_name
+            result[index]['artist']['picture'] = artist.artist_picture_url
         return result
 
     def top_albums(self):
@@ -152,9 +155,11 @@ class HoergewohnheitenStats(object):
             result[index]['album'] = {}
             result[index]['album']['id'] = album.album_id
             result[index]['album']['name'] = album.album_name
+            result[index]['album']['cover'] = album.cover_url
             result[index]['album']['artist'] = {}
             result[index]['album']['artist']['id'] = album.artist.artist_id
             result[index]['album']['artist']['name'] = album.artist.artist_name
+            result[index]['album']['artist']['picture'] = album.artist.artist_picture_url
         return result
 
     def plays(self):
@@ -190,7 +195,6 @@ class HoergewohnheitenStats(object):
             result[int(hour)] = round(mean_by_hour_of_day[hour], 2)
         return result
 
-    @property
     def as_dict(self):
         return {
             'avg_bpm': self.bpm_mean(),
@@ -248,7 +252,7 @@ class HoergewohnheitenManager(object):
 
     def fetch_stats(self):
         s = HoergewohnheitenStats(self.csv_file_path)
-        return s.as_dict
+        return s.as_dict()
 
     def git_push_files(self, file_paths=None):
         if file_paths:
