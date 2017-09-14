@@ -8,3 +8,8 @@ run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Running main.py.";
 	. ${VENV_NAME}/bin/activate; python main.py; deactivate 
+
+stats:
+	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
+	@echo "Updating stats.";
+	. ${VENV_NAME}/bin/activate; python update_stats.py; deactivate

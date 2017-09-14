@@ -125,11 +125,11 @@ class HoergewohnheitenStats(object):
             result[index]['artist'] = {}
             result[index]['artist']['id'] = track.artist.artist_id
             result[index]['artist']['name'] = track.artist.artist_name
-            result[index]['artist']['picture'] = track.artist.artist_picture_url
+            result[index]['artist']['image_url'] = track.artist.artist_picture_url
             result[index]['album'] = {}
             result[index]['album']['id'] = track.album.album_id
             result[index]['album']['name'] = track.album.album_name
-            result[index]['album']['cover'] = track.album.cover_url
+            result[index]['album']['image_url'] = track.album.cover_url
         return result
 
     def top_artists(self):
@@ -142,7 +142,7 @@ class HoergewohnheitenStats(object):
             result[index]['artist'] = {}
             result[index]['artist']['id'] = artist.artist_id
             result[index]['artist']['name'] = artist.artist_name
-            result[index]['artist']['picture'] = artist.artist_picture_url
+            result[index]['artist']['image_url'] = artist.artist_picture_url
         return result
 
     def top_albums(self):
@@ -155,11 +155,11 @@ class HoergewohnheitenStats(object):
             result[index]['album'] = {}
             result[index]['album']['id'] = album.album_id
             result[index]['album']['name'] = album.album_name
-            result[index]['album']['cover'] = album.cover_url
+            result[index]['album']['image_url'] = album.cover_url
             result[index]['album']['artist'] = {}
             result[index]['album']['artist']['id'] = album.artist.artist_id
             result[index]['album']['artist']['name'] = album.artist.artist_name
-            result[index]['album']['artist']['picture'] = album.artist.artist_picture_url
+            result[index]['album']['artist']['image_url'] = album.artist.artist_picture_url
         return result
 
     def plays(self):
