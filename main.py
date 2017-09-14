@@ -220,6 +220,7 @@ class HoergewohnheitenManager(object):
         self.json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO,
                                                      self.year,
                                                      pad_number(self.month))
+        self.overview_json_file_path = '{}/overview.json'.format(settings.PATH_TO_DATA_REPO)
 
     def _stringify_lists(self, list_items):
         return "|".join(list_items) if list_items else ""
@@ -251,11 +252,8 @@ class HoergewohnheitenManager(object):
         s = HoergewohnheitenStats(self.csv_file_path)
         return s.as_dict()
 
-    def git_push_files(self, file_paths=None):
-        if file_paths:
-            paths = [f for f in file_paths if os.path.exists(f)]
-        else:
-            paths = [f for f in [self.csv_file_path, self.json_file_path] if os.path.exists(f)]
+    def git_push_files(self, file_paths):
+        paths = [f for f in file_paths if os.path.exists(f)]
         repo = Repo(settings.PATH_TO_DATA_REPO)
         repo.index.add(paths)
         repo.index.commit("Updating files.")
@@ -269,9 +267,26 @@ class HoergewohnheitenManager(object):
             for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
                 f.write("{}\n".format(track.csv_string))
 
-    def write_stats_to_json(self, stats):
-        with open(self.json_file_path, 'w') as f:
-            json.dump(stats, f, sort_keys=True, indent=4)
+    def write_dictionary_to_json(self, dictionary, json_path):
+        with open(json_path, 'w') as f:
+            json.dump(dictionary, f, sort_keys=True, indent=4)
+
+    def create_stats_overview(self):
+        pattern_months = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].json'.format(settings.PATH_TO_DATA_REPO)
+        pattern_years = '{}/[0-9][0-9][0-9][0-9].json'.format(settings.PATH_TO_DATA_REPO)
+
+        month_file_paths = glob.glob(pattern_months)
+        year_file_paths = glob.glob(pattern_years)
+        all_file_path = 'all_time.json'
+
+        month_file_paths = [f.replace('{}/'.format(settings.PATH_TO_DATA_REPO), '') for f in month_file_paths]
+        year_file_paths = [f.replace('{}/'.format(settings.PATH_TO_DATA_REPO), '') for f in year_file_paths]
+
+        return {
+            'months': month_file_paths,
+            'years': year_file_paths,
+            'all_time': all_file_path
+        }
 
     def process(self, last_imported_datetime):
         print("Fetching new played tracks.")
@@ -280,12 +295,19 @@ class HoergewohnheitenManager(object):
         if tracks:
             print("Writing track(s) to file {}.".format(self.csv_file_path))
             self.write_tracks_to_csv(tracks)
+
             print("Fetching stats.")
             stats = self.fetch_stats()
             print("Writing stats to file {}.".format(self.json_file_path))
-            self.write_stats_to_json(stats)
+            self.write_dictionary_to_json(stats, self.json_file_path)
+
+            print("Create stats list.")
+            stats_overview = self.create_stats_overview()
+            print("Writing stats overview to file {}.".format(self.overview_json_file_path))
+            self.write_dictionary_to_json(stats_overview, self.overview_json_file_path)
+
             print("Pushing file(s) to GitHub.")
-            self.git_push_files()
+            self.git_push_files([self.csv_file_path, self.json_file_path, self.overview_json_file_path])
 
 
 if __name__ == '__main__':
