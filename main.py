@@ -279,8 +279,8 @@ class HoergewohnheitenManager(object):
         year_file_paths = glob.glob(pattern_years)
         all_file_path = 'all_time.json'
 
-        month_file_paths = [f.replace('{}/'.format(settings.PATH_TO_DATA_REPO), '') for f in month_file_paths]
-        year_file_paths = [f.replace('{}/'.format(settings.PATH_TO_DATA_REPO), '') for f in year_file_paths]
+        month_file_paths = [f.split('/')[-1] for f in month_file_paths]
+        year_file_paths = [f.split('/')[-1] for f in year_file_paths]
 
         return {
             'months': month_file_paths,
