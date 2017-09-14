@@ -119,9 +119,8 @@ class HoergewohnheitenStats(object):
             track = self.spotify.get_track(track_id)
             result[index] = {}
             result[index]['plays'] = int(top_tracks[track_id])
-            result[index]['track'] = {}
-            result[index]['track']['id'] = track.track_id
-            result[index]['track']['name'] = track.track_name
+            result[index]['id'] = track.track_id
+            result[index]['name'] = track.track_name
             result[index]['artist'] = {}
             result[index]['artist']['id'] = track.artist.artist_id
             result[index]['artist']['name'] = track.artist.artist_name
@@ -139,10 +138,9 @@ class HoergewohnheitenStats(object):
             artist = self.spotify.get_artist(artist_id)
             result[index] = {}
             result[index]['plays'] = int(top_artists[artist_id])
-            result[index]['artist'] = {}
-            result[index]['artist']['id'] = artist.artist_id
-            result[index]['artist']['name'] = artist.artist_name
-            result[index]['artist']['image_url'] = artist.artist_picture_url
+            result[index]['id'] = artist.artist_id
+            result[index]['name'] = artist.artist_name
+            result[index]['image_url'] = artist.artist_picture_url
         return result
 
     def top_albums(self):
@@ -152,14 +150,13 @@ class HoergewohnheitenStats(object):
             album = self.spotify.get_album(album_id)
             result[index] = {}
             result[index]['plays'] = int(top_albums[album_id])
-            result[index]['album'] = {}
-            result[index]['album']['id'] = album.album_id
-            result[index]['album']['name'] = album.album_name
-            result[index]['album']['image_url'] = album.cover_url
-            result[index]['album']['artist'] = {}
-            result[index]['album']['artist']['id'] = album.artist.artist_id
-            result[index]['album']['artist']['name'] = album.artist.artist_name
-            result[index]['album']['artist']['image_url'] = album.artist.artist_picture_url
+            result[index]['id'] = album.album_id
+            result[index]['name'] = album.album_name
+            result[index]['image_url'] = album.cover_url
+            result[index]['artist'] = {}
+            result[index]['artist']['id'] = album.artist.artist_id
+            result[index]['artist']['name'] = album.artist.artist_name
+            result[index]['artist']['image_url'] = album.artist.artist_picture_url
         return result
 
     def plays(self):
