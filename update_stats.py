@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from main import HoergewohnheitenManager
-from main import pad_number
+from util import pad_number
 
 import settings
 
@@ -24,8 +24,9 @@ def update_stats(year_start=2017, month_start=8):
     for year, month in month_year_iterator(month_start, year_start, now.month, now.year):
         mgr = HoergewohnheitenManager(year=year, month=month)
         stats = mgr.fetch_stats()
-        mgr.write_stats_to_json(stats)
-        file_names.append('{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO, year, pad_number(month)))
+        json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO, year, pad_number(month))
+        mgr.write_dictionary_to_json(stats, json_file_path)
+        file_names.append(json_file_path)
 
     HoergewohnheitenManager().git_push_files(file_names)
 

@@ -26,9 +26,10 @@ class AudioFeature(object):
 
 class Album(object):
 
-    def __init__(self, album_id, album_name, label, album_genres, cover_url, artist):
+    def __init__(self, album_id, album_name, album_url, label, album_genres, cover_url, artist):
         self.album_id = album_id
         self.album_name = album_name
+        self.album_url = album_url
         self.label = label
         self.album_genres = album_genres
         self.cover_url = cover_url
@@ -37,18 +38,20 @@ class Album(object):
 
 class Artist(object):
 
-    def __init__(self, artist_id, artist_name, artist_genres, artist_picture_url):
+    def __init__(self, artist_id, artist_name, artist_genres, artist_picture_url, artist_url):
         self.artist_id = artist_id
         self.artist_name = artist_name
         self.artist_genres = artist_genres
         self.artist_picture_url = artist_picture_url
+        self.artist_url = artist_url
 
 
 class Track(object):
 
-    def __init__(self, track_id, track_name, artist, album, audio_feature=None, played_at=None):
+    def __init__(self, track_id, track_name, track_url, artist, album, audio_feature, played_at=None):
         self.track_id = track_id
         self.track_name = track_name
+        self.track_url = track_url
         self.artist = artist
         self.album = album
         self.audio_feature = audio_feature
@@ -93,6 +96,7 @@ class SpotifyConnection(object):
             artist = self.get_artist(response['artists'][0]['id'])
             album = Album(album_id=response['id'],
                           album_name=response['name'],
+                          album_url=response['external_urls']['spotify'],
                           label=response['label'],
                           album_genres=response['genres'],
                           cover_url=self._get_image_url_from_response(response),
@@ -106,7 +110,8 @@ class SpotifyConnection(object):
             artist = Artist(artist_id=response['id'],
                             artist_name=response['name'],
                             artist_genres=response['genres'],
-                            artist_picture_url=self._get_image_url_from_response(response))
+                            artist_picture_url=self._get_image_url_from_response(response),
+                            artist_url=response['external_urls']['spotify'])
             self.artist_cache[artist_id] = artist
         return self.artist_cache[artist_id]
 
@@ -115,9 +120,12 @@ class SpotifyConnection(object):
             response = self.client.track(track_id)
             artist = self.get_artist(response['artists'][0]['id'])
             album = self.get_album(response['album']['id'])
+            audio_feature = self.get_audio_feature(track_id)
             track = Track(track_id=track_id,
                           track_name=response['name'],
+                          track_url=response['external_urls']['spotify'],
                           artist=artist,
+                          audio_feature=audio_feature,
                           album=album)
             self.track_cache[track_id] = track
         return self.track_cache[track_id]
@@ -135,6 +143,7 @@ class SpotifyConnection(object):
             audio_feature = self.get_audio_feature(response_track['id'])
             track = Track(track_id=response_track['id'],
                           track_name=response_track['name'],
+                          track_url=response_track['external_urls']['spotify'],
                           artist=artist,
                           album=album,
                           audio_feature=audio_feature,
