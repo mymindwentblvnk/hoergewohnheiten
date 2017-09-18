@@ -65,11 +65,11 @@ class HoergewohnheitenStatsMixin(object):
             result[index]['artist']['spotify_url'] = album.artist.artist_url
         return result
 
-    def _attribute_by_time_unit(self, attribute, day_or_hour, count_or_mean):
+    def _attribute_by_time_unit(self, attribute, day_or_hour_or_dayofweek, count_or_mean):
         result = {}
-        time_unit = self.times.dt.hour if day_or_hour == 'hour' else self.times.dt.day
-        grouped_data_frame = self.data_frame.groupby([time_unit])[attribute]
-        data = grouped_data_frame.mean() if count_or_mean == 'mean' else grouped_data_frame.count()
+        time_unit = self.times.dt.__getattribute__(day_or_hour_or_dayofweek)
+        grouped = self.data_frame.groupby([time_unit])[attribute]
+        data = grouped.__getattribute__(count_or_mean)()
         for unit in data.keys():
             result[int(unit)] = round(data[unit], 2) if count_or_mean == 'mean' else int(data[unit])
         return result
@@ -83,6 +83,9 @@ class HoergewohnheitenStatsMixin(object):
     def bpm_by_day_of_month(self):
         return self._attribute_by_time_unit('track_bpm', 'day', 'mean')
 
+    def bpm_by_day_of_week(self):
+        return self._attribute_by_time_unit('track_bpm', 'dayofweek', 'mean')
+
     def energy_mean(self):
         return round(self.data_frame['track_energy'].mean(), 2)
 
@@ -91,6 +94,9 @@ class HoergewohnheitenStatsMixin(object):
 
     def energy_by_day_of_month(self):
         return self._attribute_by_time_unit('track_energy', 'day', 'mean')
+
+    def energy_by_day_of_week(self):
+        return self._attribute_by_time_unit('track_energy', 'dayofweek', 'mean')
 
     def valence_mean(self):
         return round(self.data_frame['track_valence'].mean(), 2)
@@ -101,6 +107,9 @@ class HoergewohnheitenStatsMixin(object):
     def valence_by_day_of_month(self):
         return self._attribute_by_time_unit('track_valence', 'day', 'mean')
 
+    def valence_by_day_of_week(self):
+        return self._attribute_by_time_unit('track_valence', 'dayofweek', 'mean')
+
     def plays(self):
         return len(self.data_frame)
 
@@ -110,21 +119,27 @@ class HoergewohnheitenStatsMixin(object):
     def plays_by_day_of_month(self):
         return self._attribute_by_time_unit('track_id', 'day', 'count')
 
+    def plays_by_day_of_week(self):
+        return self._attribute_by_time_unit('track_id', 'dayofweek', 'count')
+
     def as_dict(self):
         return {
             'bpm': {
                 'average': self.bpm_mean(),
-                'by_day': self.bpm_by_day_of_month(),
+                'by_day_of_month': self.bpm_by_day_of_month(),
+                'by_day_of_week': self.bpm_by_day_of_week(),
                 'by_hour': self.bpm_by_hour_of_day(),
             },
             'energy': {
                 'average': self.energy_mean(),
-                'by_day': self.energy_by_day_of_month(),
+                'by_day_of_month': self.energy_by_day_of_month(),
+                'by_day_of_week': self.energy_by_day_of_week(),
                 'by_hour': self.energy_by_hour_of_day(),
             },
             'plays': {
                 'total': self.plays(),
-                'by_day': self.plays_by_day_of_month(),
+                'by_day_of_month': self.plays_by_day_of_month(),
+                'by_day_of_week': self.plays_by_day_of_week(),
                 'by_hour': self.plays_by_hour_of_day(),
             },
             'top_list': {
@@ -134,7 +149,8 @@ class HoergewohnheitenStatsMixin(object):
             },
             'valence': {
                 'average': self.valence_mean(),
-                'by_day': self.valence_by_day_of_month(),
+                'by_day_of_month': self.valence_by_day_of_month(),
+                'by_day_of_week': self.valence_by_day_of_week(),
                 'by_hour': self.valence_by_hour_of_day(),
             },
         }
@@ -147,21 +163,3 @@ class HoergewohnheitenMonthStats(HoergewohnheitenStatsMixin):
         self.data_frame = pd.read_csv(csv_file_path)
         self.times = self._get_times()
         self.top_n = 15
-
-
-class HoergewohnheitenYearStats(HoergewohnheitenStatsMixin):
-
-    def __init__(self, csv_directory_path, csv_file_pattern):
-        self.spotify = SpotifyConnection()
-        self.data_frame = pd.read_csv(csv_file_path)
-        self.times = self._get_times()
-        self.top_n = 100
-
-
-class HoergewohnheitenAllTimeStats(HoergewohnheitenStatsMixin):
-
-    def __init__(self, csv_directory_path, csv_file_pattern):
-        self.spotify = SpotifyConnection()
-        self.data_frame = pd.read_csv(csv_file_path)
-        self.times = self._get_times()
-        self.top_n = 100
