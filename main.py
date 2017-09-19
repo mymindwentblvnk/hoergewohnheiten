@@ -15,6 +15,10 @@ from stats import HoergewohnheitenMonthStats
 CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,artist_genres,album_id,album_name,album_label,album_genres,weather_temperature,weather_status"
 
 
+def stringify_lists(list_items):
+    return "|".join(list_items) if list_items else ""
+
+
 def track_to_csv_string(track, weather_temperature, weather_status):
     fields = [track.played_at,
               track.track_id,
@@ -24,11 +28,11 @@ def track_to_csv_string(track, weather_temperature, weather_status):
               track.audio_feature.valence,
               track.artist.artist_id,
               track.artist.artist_name,
-              track.artist.artist_genres,
+              stringify_lists(track.artist.artist_genres),
               track.album.album_id,
               track.album.album_name,
               track.album.label,
-              track.album.album_genres,
+              stringify_lists(track.album.album_genres),
               weather_temperature,
               weather_status]
     escaped_fields = [str(field).replace(',', '').replace('\'', '').replace('\"', '') for field in fields]
@@ -77,9 +81,6 @@ class HoergewohnheitenManager(object):
                     return self._convert_datetime_to_utc_in_ms(dt)
             except (FileNotFoundError, IndexError):
                 pass
-
-    def _stringify_lists(self, list_items):
-        return "|".join(list_items) if list_items else ""
 
     def fetch_newest_played_tracks(self, last_imported_datetime):
         return self.spotify.get_recently_played_tracks(after=last_imported_datetime)
