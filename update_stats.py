@@ -19,16 +19,25 @@ def month_year_iterator(start_month, start_year, end_month, end_year):
 
 
 def update_stats(year_start=2017, month_start=8):
-    file_names = []
-
     for year, month in month_year_iterator(month_start, year_start, now.month, now.year):
         mgr = HoergewohnheitenManager(year=year, month=month)
-        stats = mgr.fetch_stats()
+        stats = mgr.fetch_month_stats()
         json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO, year, pad_number(month))
         mgr.write_dictionary_to_json(stats, json_file_path)
-        file_names.append(json_file_path)
 
-    HoergewohnheitenManager().git_push_files(file_names)
+    for year in range(year_start, now.year + 1):
+        mgr = HoergewohnheitenManager(year=year)
+        stats = mgr.fetch_year_stats()
+        json_file_path = '{}/{}.json'.format(settings.PATH_TO_DATA_REPO, year)
+        mgr.write_dictionary_to_json(stats, json_file_path)
+
+    mgr = HoergewohnheitenManager()
+    stats = mgr.fetch_all_time_stats()
+    json_file_path = '{}/all_time.json'.format(settings.PATH_TO_DATA_REPO, year)
+    mgr.write_dictionary_to_json(stats, json_file_path)
+ 
+    # For all new files
+    mgr.git_push_files()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 import pandas as pd
+from glob import glob
 
 from connections import OWMConnection, SpotifyConnection
 
@@ -6,7 +7,23 @@ import settings
 import util
 
 
+SPOTIFY = SpotifyConnection() 
+
 class HoergewohnheitenStatsMixin(object):
+
+    def _load_csv_files(self, year=None, month=None):
+        if not year and not month:  # All time
+            csv_file_paths = glob('{}/[2-9][0-9][0-9][0-9]-[0-1][0-9].csv'.format(settings.PATH_TO_DATA_REPO))
+        elif year and not month:  # Year
+            csv_file_paths = glob('{}/{}-[0-1][0-9].csv'.format(settings.PATH_TO_DATA_REPO, year))
+        elif year and month:  # Month
+            csv_file_paths = glob('{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO, year, util.pad_number(month)))
+
+        data_frames = []
+        for index, path in enumerate(csv_file_paths, 1):
+            frame = pd.read_csv(path)
+            data_frames.append(frame)
+        return pd.concat(data_frames, ignore_index=True)
 
     def _get_times(self):
         times = pd.to_datetime(self.data_frame.played_at_as_utc)
@@ -158,8 +175,26 @@ class HoergewohnheitenStatsMixin(object):
 
 class HoergewohnheitenMonthStats(HoergewohnheitenStatsMixin):
 
-    def __init__(self, csv_file_path):
-        self.spotify = SpotifyConnection()
-        self.data_frame = pd.read_csv(csv_file_path)
+    def __init__(self, year, month):
+        self.spotify = SPOTIFY
+        self.data_frame = self._load_csv_files(year=year, month=month)
         self.times = self._get_times()
         self.top_n = 15
+
+
+class HoergewohnheitenYearStats(HoergewohnheitenStatsMixin):
+
+    def __init__(self, year):
+        self.spotify = SPOTIFY
+        self.data_frame = self._load_csv_files(year=year)
+        self.times = self._get_times()
+        self.top_n = 100
+
+
+class HoergewohnheitenAllTimeStats(HoergewohnheitenStatsMixin):
+
+    def __init__(self):
+        self.spotify = SPOTIFY
+        self.data_frame = self._load_csv_files()
+        self.times = self._get_times()
+        self.top_n = 100
