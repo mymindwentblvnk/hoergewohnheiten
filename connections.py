@@ -48,7 +48,7 @@ class Artist(object):
 
 class Track(object):
 
-    def __init__(self, track_id, track_name, track_url, artist, album, audio_feature, played_at=None):
+    def __init__(self, track_id, track_name, track_url, artist, album, audio_feature=None, played_at=None):
         self.track_id = track_id
         self.track_name = track_name
         self.track_url = track_url
@@ -120,12 +120,10 @@ class SpotifyConnection(object):
             response = self.client.track(track_id)
             artist = self.get_artist(response['artists'][0]['id'])
             album = self.get_album(response['album']['id'])
-            audio_feature = self.get_audio_feature(track_id)
             track = Track(track_id=track_id,
                           track_name=response['name'],
                           track_url=response['external_urls']['spotify'],
                           artist=artist,
-                          audio_feature=audio_feature,
                           album=album)
             self.track_cache[track_id] = track
         return self.track_cache[track_id]
