@@ -14,7 +14,7 @@ from stats import HoergewohnheitenYearStats
 from stats import HoergewohnheitenAllTimeStats
 
 
-CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,artist_genres,album_id,album_name,album_label,album_genres,weather_temperature,weather_status"
+CSV_HEADER = "played_at_as_utc,track_id,track_name,track_bpm,track_energy,track_valence,artist_id,artist_name,album_id,album_name,album_genres,weather_temperature,weather_status"
 
 
 def stringify_lists(list_items):
