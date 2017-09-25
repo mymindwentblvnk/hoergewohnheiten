@@ -30,10 +30,8 @@ def track_to_csv_string(track, weather_temperature, weather_status):
               track.audio_feature.valence,
               track.artist.artist_id,
               track.artist.artist_name,
-              stringify_lists(track.artist.artist_genres),
               track.album.album_id,
               track.album.album_name,
-              track.album.label,
               stringify_lists(track.album.album_genres),
               weather_temperature,
               weather_status]
