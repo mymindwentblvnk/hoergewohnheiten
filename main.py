@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 from glob import glob
 import json
@@ -49,11 +49,9 @@ class HoergewohnheitenManager(object):
         self.weather = OWMConnection().get_weather()
         self.overview_json_file_path = '{}/overview.json'.format(settings.PATH_TO_DATA_REPO)
 
-
     def _convert_datetime_to_utc_in_ms(self, dt):
         neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
         return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
-
 
     def _convert_played_at_from_csv_to_datetime(self, played_at):
         try:
@@ -109,8 +107,6 @@ class HoergewohnheitenManager(object):
             if initial_write:
                 f.write("{}\n".format(CSV_HEADER))
             for track in reversed(tracks):  # Reverse tracks so latest play is at the bottom
-                temperature = self.weather.temperature
-                status = self.weather.status
                 f.write("{}\n".format(track_to_csv_string(track,
                                                           self.weather.temperature,
                                                           self.weather.status)))
@@ -139,8 +135,8 @@ class HoergewohnheitenManager(object):
     def _get_json_file_path(self, year=None, month=None):
         if year and month:
             result = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO,
-                                          year,
-                                          util.pad_number(month))
+                                            year,
+                                            util.pad_number(month))
         elif year and not month:
             result = '{}/{}.json'.format(settings.PATH_TO_DATA_REPO, year)
         elif not year and not month:

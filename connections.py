@@ -1,11 +1,13 @@
+from datetime import datetime
+
 from spotipy import Spotify
 import spotipy.util
 
 import pyowm
 
 import settings
+import util
 
-from datetime import datetime
 
 
 def convert_played_at_from_response_to_datetime(played_at):
@@ -54,7 +56,7 @@ class Track(object):
         self.album = album
         self.audio_feature = audio_feature
         self.played_at = played_at
-    
+
 
 class SpotifyConnection(object):
 
@@ -124,6 +126,23 @@ class SpotifyConnection(object):
             self.track_cache[track_id] = track
         return self.track_cache[track_id]
 
+    def get_tracks(self, track_ids):
+        tracks = []
+        for chunk in util.chunks(track_ids, 50):
+            responses = self.client.tracks(chunk)
+            for response in responses['tracks']:
+                track_id = response['id']
+                artist = self.get_artist(response['artists'][0]['id'])
+                album = self.get_album(response['album']['id'])
+                track = Track(track_id=track_id,
+                              track_name=response['name'],
+                              track_url=response['external_urls']['spotify'],
+                              artist=artist,
+                              album=album)
+                self.track_cache[track_id] = track
+                tracks.append(track)
+        return tracks
+
     def _get_tracks_from_response(self, response):
         tracks = []
         for item in response['items']:
@@ -144,7 +163,7 @@ class SpotifyConnection(object):
                           played_at=played_at)
             tracks.append(track)
         return tracks
-        
+
     def get_recently_played_tracks(self, limit=50, after=None):
         tracks = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)

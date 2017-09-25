@@ -7,7 +7,8 @@ import settings
 import util
 
 
-SPOTIFY = SpotifyConnection() 
+SPOTIFY = SpotifyConnection()
+
 
 class HoergewohnheitenStatsMixin(object):
 
