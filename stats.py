@@ -180,7 +180,7 @@ class HoergewohnheitenMonthStats(HoergewohnheitenStatsMixin):
         self.spotify = SPOTIFY
         self.data_frame = self._load_csv_files(year=year, month=month)
         self.times = self._get_times()
-        self.top_n = 15
+        self.top_n = 50
 
 
 class HoergewohnheitenYearStats(HoergewohnheitenStatsMixin):
