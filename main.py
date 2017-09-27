@@ -88,6 +88,11 @@ class HoergewohnheitenManager(object):
         s = HoergewohnheitenAllTimeStats()
         return s.as_dict()
 
+    def git_pull(self):
+        repo = Repo(settings.PATH_TO_DATA_REPO)
+        origin = repo.remotes.origin
+        origin.pull()
+
     def git_push_files(self):
         paths = []
         for extension in ('csv', 'json'):
@@ -153,6 +158,8 @@ class HoergewohnheitenManager(object):
         print("> {} track(s) found".format(len(tracks)))
 
         if tracks:
+            print("* Git pull.")
+            self.git_pull()
             print("* Writing new played track(s) to csv")
             self.write_tracks_to_csv(tracks)
 
