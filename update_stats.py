@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from main import HoergewohnheitenManager
-from util import pad_number
+import util
 
 import settings
 
@@ -19,24 +19,34 @@ def month_year_iterator(start_month, start_year, end_month, end_year):
 
 
 def update_stats(year_start=2017, month_start=8):
+    print(util.LOG_HEADER)
+    print("* Updating month stats")
     for year, month in month_year_iterator(month_start, year_start, now.month, now.year):
+        print("> {}-{}".format(year, util.pad_number(month)))
+
         mgr = HoergewohnheitenManager(year=year, month=month)
         stats = mgr.fetch_month_stats()
-        json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO, year, pad_number(month))
+        json_file_path = '{}/{}-{}.json'.format(settings.PATH_TO_DATA_REPO, year, util.pad_number(month))
         mgr.write_dictionary_to_json(stats, json_file_path)
 
+    print("* Updating year stats")
     for year in range(year_start, now.year + 1):
+        print("> {}".format(year))
         mgr = HoergewohnheitenManager(year=year)
         stats = mgr.fetch_year_stats()
         json_file_path = '{}/{}.json'.format(settings.PATH_TO_DATA_REPO, year)
         mgr.write_dictionary_to_json(stats, json_file_path)
 
+    print("* Updating all time stats")
     mgr = HoergewohnheitenManager()
     stats = mgr.fetch_all_time_stats()
     json_file_path = '{}/all_time.json'.format(settings.PATH_TO_DATA_REPO, year)
     mgr.write_dictionary_to_json(stats, json_file_path)
- 
+
     # For all new files
+    print("* Git pull")
+    mgr.git_pull()
+    print("* Git push")
     mgr.git_push_files()
 
 

@@ -42,12 +42,15 @@ def track_to_csv_string(track, weather_temperature, weather_status):
 class HoergewohnheitenManager(object):
 
     def __init__(self, year=None, month=None):
-        self.path_to_data_repo = settings.PATH_TO_DATA_REPO
         self.year = year if year else datetime.now().year
         self.month = month if month else datetime.now().month
+
         self.spotify = SpotifyConnection()
         self.weather = OWMConnection().get_weather()
+
         self.overview_json_file_path = '{}/overview.json'.format(settings.PATH_TO_DATA_REPO)
+        self.latest_plays_json_file_path = '{}/latest_plays.json'.format(settings.PATH_TO_DATA_REPO)
+        self.latest_n_plays = 20
 
     def _convert_datetime_to_utc_in_ms(self, dt):
         neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
@@ -61,7 +64,7 @@ class HoergewohnheitenManager(object):
             return datetime.strptime(played_at, '%Y-%m-%d %H:%M:%S')
 
     def _get_last_imported_datetime_as_utc(self):
-        csv_file_pattern = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(self.path_to_data_repo)
+        csv_file_pattern = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)
         for csv_file in sorted(glob(csv_file_pattern), reverse=True):
             try:
                 with open(csv_file, 'r') as f:
@@ -121,12 +124,12 @@ class HoergewohnheitenManager(object):
             json.dump(dictionary, f, sort_keys=True, indent=4)
 
     def create_stats_overview(self):
-        pattern_months = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].json'.format(self.path_to_data_repo)
-        pattern_years = '{}/[0-9][0-9][0-9][0-9].json'.format(self.path_to_data_repo)
+        pattern_months = '{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].json'.format(settings.PATH_TO_DATA_REPO)
+        pattern_years = '{}/[0-9][0-9][0-9][0-9].json'.format(settings.PATH_TO_DATA_REPO)
 
         month_file_paths = glob(pattern_months)
         year_file_paths = glob(pattern_years)
-        all_file_path = 'all_time.json' if os.path.exists('{}/all_time.json'.format(self.path_to_data_repo)) else None
+        all_file_path = 'all_time.json' if os.path.exists('{}/all_time.json'.format(settings.PATH_TO_DATA_REPO)) else None
 
         month_file_paths = [f.split('/')[-1] for f in month_file_paths]
         year_file_paths = [f.split('/')[-1] for f in year_file_paths]
@@ -148,6 +151,35 @@ class HoergewohnheitenManager(object):
             result = '{}/all_time.json'.format(settings.PATH_TO_DATA_REPO)
         return result
 
+    def create_latest_plays_overview(self):
+        csv_file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
+                                              self.year,
+                                              util.pad_number(self.month))
+        result = {}
+        with open(csv_file_path, 'r') as f:
+            plays = f.readlines()
+            for index, row in enumerate(reversed(plays[-self.latest_n_plays:]), 1):
+                play = row.split(",")
+                played_at_as_utc = play[0]
+                track_id = play[1]
+                track = self.spotify.get_track(track_id)
+                result[index] = {}
+                result[index]['played_at_as_utc'] = played_at_as_utc
+                result[index]['id'] = track.track_id
+                result[index]['name'] = track.track_name
+                result[index]['spotify_url'] = track.track_url
+                result[index]['artist'] = {}
+                result[index]['artist']['id'] = track.artist.artist_id
+                result[index]['artist']['name'] = track.artist.artist_name
+                result[index]['artist']['image_url'] = track.artist.artist_picture_url
+                result[index]['artist']['spotify_url'] = track.artist.artist_url
+                result[index]['album'] = {}
+                result[index]['album']['id'] = track.album.album_id
+                result[index]['album']['name'] = track.album.album_name
+                result[index]['album']['image_url'] = track.album.cover_url
+                result[index]['album']['spotify_url'] = track.album.album_url
+        return result
+
     def process(self):
         print(util.LOG_HEADER)
         print("* Fetching last imported datetime")
@@ -155,12 +187,13 @@ class HoergewohnheitenManager(object):
 
         print("* Fetching new played tracks")
         tracks = self.fetch_newest_played_tracks(last_imported_datetime)
-        print("> {} track(s) found".format(len(tracks)))
+        print("> {} play(s) found".format(len(tracks)))
 
         if tracks:
-            print("* Git pull.")
+            print("* Git pull")
             self.git_pull()
-            print("* Writing new played track(s) to csv")
+
+            print("* Writing new plays to csv")
             self.write_tracks_to_csv(tracks)
 
             print("* Fetching stats")
@@ -179,11 +212,15 @@ class HoergewohnheitenManager(object):
             out_path = self._get_json_file_path()
             self.write_dictionary_to_json(all_time_stats, out_path)
 
+            print("* Create latest plays overview")
+            latest_plays_overview = self.create_latest_plays_overview()
+            self.write_dictionary_to_json(latest_plays_overview, self.latest_plays_json_file_path)
+
             print("* Create stats overview")
             stats_overview = self.create_stats_overview()
             self.write_dictionary_to_json(stats_overview, self.overview_json_file_path)
 
-            print("* Pushing file(s) to GitHub")
+            print("* Git push")
             self.git_push_files()
 
 

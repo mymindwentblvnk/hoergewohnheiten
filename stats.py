@@ -12,6 +12,8 @@ SPOTIFY = SpotifyConnection()
 
 class HoergewohnheitenStatsMixin(object):
 
+    last_n_tracks = 20
+
     def _load_csv_files(self, year=None, month=None):
         if not year and not month:  # All time
             csv_file_paths = glob('{}/[2-9][0-9][0-9][0-9]-[0-1][0-9].csv'.format(settings.PATH_TO_DATA_REPO))
@@ -29,6 +31,33 @@ class HoergewohnheitenStatsMixin(object):
     def _get_times(self):
         times = pd.to_datetime(self.data_frame.played_at_as_utc)
         return times + pd.Timedelta('{}:00:00'.format(util.pad_number(settings.HOURS_FROM_UTC)))
+
+    def last_played_tracks(self):
+        result = {}
+        latest_plays = self.data_frame.tail(self.last_n_tracks)
+        for index in range(self.last_n_tracks):
+            played_at_as_utc = latest_plays.iloc[index]['played_at_as_utc']
+            track_id = latest_plays.iloc[index]['track_id']
+            track = self.spotify.get_track(track_id)
+
+            result_index = self.last_n_tracks - index  # Puts latest play on index 1 and so forth
+
+            result[result_index] = {}
+            result[result_index]['played_at_as_utc'] = played_at_as_utc
+            result[result_index]['id'] = track.track_id
+            result[result_index]['name'] = track.track_name
+            result[result_index]['spotify_url'] = track.track_url
+            result[result_index]['artist'] = {}
+            result[result_index]['artist']['id'] = track.artist.artist_id
+            result[result_index]['artist']['name'] = track.artist.artist_name
+            result[result_index]['artist']['image_url'] = track.artist.artist_picture_url
+            result[result_index]['artist']['spotify_url'] = track.artist.artist_url
+            result[result_index]['album'] = {}
+            result[result_index]['album']['id'] = track.album.album_id
+            result[result_index]['album']['name'] = track.album.album_name
+            result[result_index]['album']['image_url'] = track.album.cover_url
+            result[result_index]['album']['spotify_url'] = track.album.album_url
+        return result
 
     def top_tracks(self):
         result = {}
@@ -140,7 +169,13 @@ class HoergewohnheitenStatsMixin(object):
     def plays_by_day_of_week(self):
         return self._attribute_by_time_unit('track_id', 'dayofweek', 'count')
 
-    def as_dict(self):
+    def plays_by_month(self):
+        return self._attribute_by_time_unit('track_id', 'month', 'count')
+
+    def plays_by_year(self):
+        return self._attribute_by_time_unit('track_id', 'year', 'count')
+
+    def as_inner_dict(self):
         return {
             'bpm': {
                 'average': self.bpm_mean(),
@@ -182,6 +217,9 @@ class HoergewohnheitenMonthStats(HoergewohnheitenStatsMixin):
         self.times = self._get_times()
         self.top_n = 50
 
+    def as_dict(self):
+        return self.as_inner_dict()
+
 
 class HoergewohnheitenYearStats(HoergewohnheitenStatsMixin):
 
@@ -191,6 +229,11 @@ class HoergewohnheitenYearStats(HoergewohnheitenStatsMixin):
         self.times = self._get_times()
         self.top_n = 100
 
+    def as_dict(self):
+        inner_dict = self.as_inner_dict()
+        inner_dict['plays']['by_month'] = self.plays_by_month()
+        return inner_dict
+
 
 class HoergewohnheitenAllTimeStats(HoergewohnheitenStatsMixin):
 
@@ -199,3 +242,9 @@ class HoergewohnheitenAllTimeStats(HoergewohnheitenStatsMixin):
         self.data_frame = self._load_csv_files()
         self.times = self._get_times()
         self.top_n = 100
+
+    def as_dict(self):
+        inner_dict = self.as_inner_dict()
+        inner_dict['plays']['by_year'] = self.plays_by_year()
+        inner_dict['plays']['by_month'] = self.plays_by_month()
+        return inner_dict
