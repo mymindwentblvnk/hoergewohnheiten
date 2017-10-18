@@ -9,12 +9,7 @@ from sqlalchemy.schema import Table, Index, Sequence
 Base = declarative_base()
 
 
-class ColumnMixin(object):
-
-    imported_at = Column(DateTime, default=func.now())
-
-
-class AudioFeature(Base, ColumnMixin):
+class AudioFeature(Base):
 
     __tablename__ = 't_audio_feature'
     track_id = Column(String, ForeignKey('t_track.track_id'), primary_key=True, index=True)
@@ -30,7 +25,7 @@ album_artists = Table('t_album_artists',
                       Column('artist_id', String, ForeignKey('t_artist.artist_id')))
 
 
-class Album(Base, ColumnMixin):
+class Album(Base):
 
     __tablename__ = 't_album'
     album_id = Column(String, primary_key=True, index=True)
@@ -49,7 +44,7 @@ track_artists = Table('t_track_artists',
                       Column('artist_id', String, ForeignKey('t_artist.artist_id')))
 
 
-class Artist(Base, ColumnMixin):
+class Artist(Base):
 
     __tablename__ = 't_artist'
     artist_id = Column(String, primary_key=True, index=True)
@@ -58,13 +53,12 @@ class Artist(Base, ColumnMixin):
     image_url = Column(String)
 
 
-class Track(Base, ColumnMixin):
+class Track(Base):
 
     __tablename__ = 't_track'
     track_id = Column(String, primary_key=True, index=True)
     track_name = Column(String)
     spotify_url = Column(String)
-    image_url = Column(String)
     # Play (1:n)
     play = relationship('Play')
     # Audio Feature (1:1)
@@ -89,9 +83,9 @@ class Play(Base, ColumnMixin):
     year = Column(Integer)
     hour = Column(Integer)
     minute = Column(Integer)
-    seconds = Column(Integer)
+    second = Column(Integer)
 
-    day_of_week = Column(Integer)
+    day_of_week = Column(Integer)  # Monday: 0, Sunday: 6
     week_of_year = Column(Integer)
 
     # Relationship
@@ -107,5 +101,6 @@ class SQLiteConnection(object):
     def create_db(self):
         Base.metadata.create_all(bind=self.engine)
 
-    def save_model(self, model):
-        session.add(model)
+    def save_instance(self, instance):
+        self.session.add(instance)
+        self.session.commit()
