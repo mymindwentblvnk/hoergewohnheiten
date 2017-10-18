@@ -7,7 +7,6 @@ from sqlalchemy.schema import Table, Index, Sequence
 
 
 Base = declarative_base()
-Session = sessionmaker()
 
 
 class ColumnMixin(object):
@@ -82,16 +81,28 @@ class Play(Base, ColumnMixin):
     __tablename__ = 't_play'
     id = Column(Integer, Sequence('play_id_sequence'), primary_key=True)
     played_at_utc = Column(DateTime)
-    # Track (n:1)
+    played_at_cet = Column(DateTime)
     track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
-    track = relationship('Track', back_populates='play')
+
+    day = Column(Integer)
+    month = Column(Integer)
+    year = Column(Integer)
+    hour = Column(Integer)
+    minute = Column(Integer)
+    seconds = Column(Integer)
+
+    day_of_week = Column(Integer)
+    week_of_year = Column(Integer)
+
+    # Relationship
+    track = relationship('Track', back_populates='plays')
 
 
 class SQLiteConnection(object):
 
     def __init__(self, db_path):
         self.engine = create_engine('sqlite:///{}'.format(db_path))
-        self.session = Session(bind=self.engine)
+        self.session = sessionmaker()(bind=self.engine)
 
     def create_db(self):
         Base.metadata.create_all(bind=self.engine)
