@@ -53,27 +53,27 @@ class SpotifyConnection(object):
                 audio_feature = None
         return audio_feature
 
-    def get_artist(self, artist_id):
-        if artist_id not in self.artist_cache:
-            response = self.client.artist(artist_id)
-            artist = Artist(artist_id=response['id'],
-                            artist_name=response['name'],
-                            artist_picture_url=self._get_image_url_from_response(response),
-                            artist_url=response['external_urls']['spotify'])
-            self.artist_cache[artist_id] = artist
-        return self.artist_cache[artist_id]
-
+    # def get_artist(self, artist_id):
+    #     if artist_id not in self.artist_cache:
+    #         response = self.client.artist(artist_id)
+    #         artist = Artist(artist_id=response['id'],
+    #                         artist_name=response['name'],
+    #                         artist_picture_url=self._get_image_url_from_response(response),
+    #                         artist_url=response['external_urls']['spotify'])
+    #         self.artist_cache[artist_id] = artist
+    #     return self.artist_cache[artist_id]
+    #
     def get_album(self, album_id):
         album = self.db.session.query(Album).get(album_id)
         if not album:
             response = self.client.album(album_id)
             # artist = self.get_artist(response['artists'][0]['id'])
             album = Album()
-            album.album_id=response['id'],
-            album.album_name=response['name'],
-            album.spotify_url=response['external_urls']['spotify'],
+            album.album_id=response['id']
+            album.album_name=response['name']
+            album.spotify_url=response['external_urls']['spotify']
             # album_genres=response['genres'],
-            album.image_url=self._get_image_url_from_response(response),
+            album.image_url=self._get_image_url_from_response(response)
             # artist=artist)
             self.db.save_instance(album)
         return album
@@ -97,25 +97,8 @@ class SpotifyConnection(object):
             self.db.save_instance(track)
         return track
 
-    # def get_tracks(self, track_ids):
-    #     tracks = []
-    #     for chunk in util.chunks(track_ids, 50):
-    #         responses = self.client.tracks(chunk)
-    #         for response in responses['tracks']:
-    #             track_id = response['id']
-    #             artist = self.get_artist(response['artists'][0]['id'])
-    #             album = self.get_album(response['album']['id'])
-    #             track = Track(track_id=track_id,
-    #                           track_name=response['name'],
-    #                           track_url=response['external_urls']['spotify'],
-    #                           artist=artist,
-    #                           album=album)
-    #             self.track_cache[track_id] = track
-    #             tracks.append(track)
-    #     return tracks
-    #
-    def _get_play_from_response(self, response):
-        tracks = []
+    def _get_plays_from_response(self, response):
+        plays = []
         for item in response['items']:
             played_at_utc = convert_played_at_from_response_to_datetime(item['played_at'])
             played_at_cet = util.convert_datetime_utc_to_cet(played_at_utc)
@@ -126,6 +109,7 @@ class SpotifyConnection(object):
             play.day = played_at_cet.day
             play.month = played_at_cet.month
             play.year = played_at_cet.year
+            play.hour = played_at_cet.hour
             play.minute = played_at_cet.minute
             play.second = played_at_cet.second
             play.day_of_week = played_at_cet.weekday()
@@ -139,9 +123,11 @@ class SpotifyConnection(object):
     def get_plays(self, limit=50, after=None):
         plays = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        plays.extend(self.get_plays(response))
+        plays.extend(self._get_plays_from_response(response))
 
         while 'next' in response:
             response = self.client.next(response)
-            plays.extend(self.get_plays(response))
+            plays.extend(self._get_plays_from_response(response))
+
+        self.db.save_instances(plays)
         return plays

@@ -13,10 +13,11 @@ class AudioFeature(Base):
 
     __tablename__ = 't_audio_feature'
     track_id = Column(String, ForeignKey('t_track.track_id'), primary_key=True, index=True)
-    track = relationship('Track', back_populates='audio_feature')
     tempo = Column(Float)
-    valence = Column(Float)
     energy = Column(Float)
+    valence = Column(Float)
+    # Relationships
+    track = relationship('Track', back_populates='audio_feature')
 
 
 album_artists = Table('t_album_artists',
@@ -59,18 +60,16 @@ class Track(Base):
     track_id = Column(String, primary_key=True, index=True)
     track_name = Column(String)
     spotify_url = Column(String)
-    # Play (1:n)
-    play = relationship('Play')
-    # Audio Feature (1:1)
-    audio_feature = relationship('AudioFeature', uselist=False, back_populates='track')
-    # Album (n:1)
     album_id = Column(String, ForeignKey('t_album.album_id'))
+
+    # Relationships
+    plays = relationship('Play', back_populates='track')
     album = relationship('Album', back_populates='tracks')
-    # Artists (n:m)
     artists = relationship('Artist', secondary=track_artists)
+    audio_feature = relationship('AudioFeature', back_populates='track', uselist=False)
 
 
-class Play(Base, ColumnMixin):
+class Play(Base):
 
     __tablename__ = 't_play'
     id = Column(Integer, Sequence('play_id_sequence'), primary_key=True)
@@ -97,10 +96,22 @@ class SQLiteConnection(object):
     def __init__(self, db_path):
         self.engine = create_engine('sqlite:///{}'.format(db_path))
         self.session = sessionmaker()(bind=self.engine)
+        # self.drop_db()
+        # self.create_db()
+
+    def drop_db(self):
+        print("Dropping DB.")
+        Base.metadata.drop_all(bind=self.engine)
 
     def create_db(self):
+        print("Creating DB.")
         Base.metadata.create_all(bind=self.engine)
 
     def save_instance(self, instance):
         self.session.add(instance)
         self.session.commit()
+
+    def save_instances(self, instances):
+        for instance in instances:
+            print("Saving", instance)
+            self.save_instance(instance)
