@@ -18,10 +18,6 @@ def chunks(l, n):
         yield l[i:i+n]
 
 
-def convert_datetime_to_utc_in_ms(dt):  # TODO use totimestamp() method
-    neunzehnhundertsiebzig = datetime.utcfromtimestamp(0)
-    return int((dt - neunzehnhundertsiebzig).total_seconds() * 1000)
-
 def convert_played_at_from_csv_to_datetime(played_at):
     try:
         return datetime.strptime(played_at, '%Y-%m-%d %H:%M:%S.%f')
@@ -29,13 +25,10 @@ def convert_played_at_from_csv_to_datetime(played_at):
         # For the single moment where the played at time hits a full second
         return datetime.strptime(played_at, '%Y-%m-%d %H:%M:%S')
 
-def convert_datetime_utc_to_cet(datetime_to_convert, utc_to_cet=True):
-    if utc_to_cet:
-        from_tz = tz.gettz('UTC')
-        to_tz = tz.gettz('CET')
-    else:
-        from_tz = tz.gettz('CET')
-        to_tz = tz.gettz('UTC')
+def convert_datetime_from_timezone_to_timezone(datetime_to_convert, from_tz_code='UTC', to_tz_code='CET'):
+    # TODO use pytz (https://stackoverflow.com/questions/4770297/python-convert-utc-datetime-string-to-local-datetime)
+    from_tz = tz.gettz(from_tz_code)
+    to_tz = tz.gettz(to_tz_code)
 
     datetime_to_convert = datetime_to_convert.replace(tzinfo=from_tz)
     converted_datetime = datetime_to_convert.astimezone(to_tz)

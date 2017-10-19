@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Integer, Float, ForeignKey, func
+from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, desc, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
@@ -73,17 +73,17 @@ class Play(Base):
 
     __tablename__ = 't_play'
     id = Column(Integer, Sequence('play_id_sequence'), primary_key=True)
-    played_at_utc = Column(DateTime)
-    played_at_cet = Column(DateTime)
     track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
-
+    played_at_utc = Column(DateTime, unique=True)
+    played_at_utc_timestamp = Column(BigInteger, unique=True)
+    played_at_cet = Column(DateTime, unique=True)
+    played_at_cet_timestamp = Column(BigInteger, unique=True)
     day = Column(Integer)
     month = Column(Integer)
     year = Column(Integer)
     hour = Column(Integer)
     minute = Column(Integer)
     second = Column(Integer)
-
     day_of_week = Column(Integer)  # Monday: 0, Sunday: 6
     week_of_year = Column(Integer)
 
@@ -94,8 +94,9 @@ class Play(Base):
 class SQLiteConnection(object):
 
     def __init__(self, db_path):
-        self.engine = create_engine('sqlite:///{}'.format(db_path))
-        self.session = sessionmaker()(bind=self.engine)
+        self.db_path = db_path
+        self.engine = create_engine('sqlite:///{}'.format(self.db_path))
+        self.session = sessionmaker(autoflush=False)(bind=self.engine)
         # self.drop_db()
         # self.create_db()
 
@@ -113,5 +114,10 @@ class SQLiteConnection(object):
 
     def save_instances(self, instances):
         for instance in instances:
-            print("Saving", instance)
             self.save_instance(instance)
+
+    @property
+    def latest_played_at_utc_timestamp(self, as_int=True):
+        timestamp = self.session.query(func.max(Play.played_at_utc_timestamp)).first()[0]
+        if timestamp:
+            return timestamp
