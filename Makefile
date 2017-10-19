@@ -13,3 +13,8 @@ stats:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Updating stats.";
 	. ${VENV_NAME}/bin/activate; python update_stats.py; deactivate
+
+db:
+	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
+	@echo "Creating database.";
+	. ${VENV_NAME}/bin/activate; python create_db.py; deactivate 

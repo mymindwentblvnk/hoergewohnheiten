@@ -60,7 +60,7 @@ class HoergewohnheitenManager(GithubPullPushMixin):
             # self.git_pull()
 
             print("* Saving plays to database")
-            self.db.save_instances(plays, commit=True)
+            # self.db.save_instances(plays, commit=True)
 
             print("* Git push")
             # self.git_push()

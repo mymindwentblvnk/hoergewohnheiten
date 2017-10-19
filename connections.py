@@ -13,14 +13,6 @@ import util
 
 
 
-def convert_played_at_from_response_to_datetime(played_at):
-    try:
-        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except:
-        # For the single moment where the played at time hits a full second
-        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
-
-
 class SpotifyConnection(object):
 
     def __init__(self, db_connection):
@@ -109,28 +101,34 @@ class SpotifyConnection(object):
             self.db.save_instance(track)
         return track
 
+    def _get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
+        played_at_utc = util.convert_played_at_from_response_to_datetime(played_at_utc)
+        played_at_utc = util.set_timezone_to_datetime(played_at_utc, timezone='UTC')
+        played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
+        # Play
+        play = Play()
+        play.played_at_utc = played_at_utc
+        play.played_at_utc_timestamp = played_at_utc.timestamp() * 1000
+        play.played_at_cet = played_at_cet
+        play.played_at_cet_timestamp = played_at_cet.timestamp() * 1000
+        play.day = played_at_cet.day
+        play.month = played_at_cet.month
+        play.year = played_at_cet.year
+        play.hour = played_at_cet.hour
+        play.minute = played_at_cet.minute
+        play.second = played_at_cet.second
+        play.day_of_week = played_at_cet.weekday()
+        play.week_of_year = played_at_cet.date().isocalendar()[1]
+        # Track
+        track = self.get_track(track_id)
+        play.track = track
+        return play
+
     def _get_plays_from_response(self, response):
         plays = []
         for item in response['items']:
-            played_at_utc = convert_played_at_from_response_to_datetime(item['played_at'])
-            played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
-            # Play
-            play = Play()
-            play.played_at_utc = played_at_utc
-            play.played_at_utc_timestamp = played_at_utc.timestamp() * 1000
-            play.played_at_cet = played_at_cet
-            play.played_at_cet_timestamp = played_at_utc.timestamp() * 1000
-            play.day = played_at_cet.day
-            play.month = played_at_cet.month
-            play.year = played_at_cet.year
-            play.hour = played_at_cet.hour
-            play.minute = played_at_cet.minute
-            play.second = played_at_cet.second
-            play.day_of_week = played_at_cet.weekday()
-            play.week_of_year = played_at_cet.date().isocalendar()[1]
-            # Track
-            track = self.get_track(item['track']['id'])
-            play.track = track
+            play = self._get_play_from_played_at_utc_and_track_id(item['played_at'],
+                                                                  item['track']['id'])
             plays.append(play)
         return plays
 

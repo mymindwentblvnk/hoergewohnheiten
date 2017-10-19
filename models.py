@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table, Index, Sequence
+from sqlalchemy.exc import IntegrityError
 
 
 Base = declarative_base()
@@ -108,14 +109,17 @@ class SQLiteConnection(object):
         print("Creating DB.")
         Base.metadata.create_all(bind=self.engine)
 
-    def save_instance(self, instance, commit=False):
-        self.session.add(instance)
-        if commit:
+    def save_instance(self, instance):
+        try:
+            self.session.add(instance)
             self.session.commit()
+        except IntegrityError as e:
+            print("Skipped already there date.")
+            pass
 
-    def save_instances(self, instances, commit=False):
+    def save_instances(self, instances):
         for instance in instances:
-            self.save_instance(instance, commit)
+            self.save_instance(instance)
 
     @property
     def latest_played_at_utc_timestamp(self):
