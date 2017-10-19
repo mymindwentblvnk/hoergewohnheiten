@@ -108,16 +108,17 @@ class SQLiteConnection(object):
         print("Creating DB.")
         Base.metadata.create_all(bind=self.engine)
 
-    def save_instance(self, instance):
+    def save_instance(self, instance, commit=False):
         self.session.add(instance)
-        self.session.commit()
+        if commit:
+            self.session.commit()
 
-    def save_instances(self, instances):
+    def save_instances(self, instances, commit=False):
         for instance in instances:
-            self.save_instance(instance)
+            self.save_instance(instance, commit)
 
     @property
-    def latest_played_at_utc_timestamp(self, as_int=True):
+    def latest_played_at_utc_timestamp(self):
         timestamp = self.session.query(func.max(Play.played_at_utc_timestamp)).first()[0]
         if timestamp:
             return timestamp
