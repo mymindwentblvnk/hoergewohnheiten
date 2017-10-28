@@ -36,8 +36,7 @@ if __name__ == '__main__':
     play_tuples = load_plays_from_csv_files()
 
     for p in play_tuples:
+        print("Processing", p)
         played_at_utc, track_id = p
         play = spotify._get_play_from_played_at_utc_and_track_id(played_at_utc, track_id)
-        plays.append(play)
-
-    db.save_instances(plays)
+        db.save_instance(play)

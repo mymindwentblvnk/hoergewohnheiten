@@ -34,6 +34,7 @@ class SpotifyConnection(object):
         audio_feature = self.db.session.query(AudioFeature).get(track_id)
 
         if not audio_feature:
+            print(">> Audio Feature not in database.")
             response = self.client.audio_features(track_id)[0]
             if response:  # Some tracks do not have audio features
                 audio_feature = AudioFeature()
@@ -67,6 +68,7 @@ class SpotifyConnection(object):
     def get_album(self, album_id):
         album = self.db.session.query(Album).get(album_id)
         if not album:
+            print(">> Album not in database.")
             response = self.client.album(album_id)
             artist_ids = [a['id'] for a in response['artists']]
             artists = self.get_artists(artist_ids)
@@ -84,6 +86,7 @@ class SpotifyConnection(object):
     def get_track(self, track_id):
         track = self.db.session.query(Track).get(track_id)
         if not track:
+            print(">> Track not in database.")
             response = self.client.track(track_id)
             artist_ids = [a['id'] for a in response['artists']]
             artists = self.get_artists(artist_ids)
@@ -107,10 +110,9 @@ class SpotifyConnection(object):
         played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
         # Play
         play = Play()
-        play.played_at_utc = played_at_utc
         play.played_at_utc_timestamp = played_at_utc.timestamp() * 1000
+        play.played_at_utc = played_at_utc
         play.played_at_cet = played_at_cet
-        play.played_at_cet_timestamp = played_at_cet.timestamp() * 1000
         play.day = played_at_cet.day
         play.month = played_at_cet.month
         play.year = played_at_cet.year

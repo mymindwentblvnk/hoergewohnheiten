@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table, Index, Sequence
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 
 Base = declarative_base()
@@ -73,12 +73,9 @@ class Track(Base):
 class Play(Base):
 
     __tablename__ = 't_play'
-    id = Column(Integer, Sequence('play_id_sequence'), primary_key=True)
-    track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
-    played_at_utc = Column(DateTime, unique=True)
-    played_at_utc_timestamp = Column(BigInteger, unique=True)
-    played_at_cet = Column(DateTime, unique=True)
-    played_at_cet_timestamp = Column(BigInteger, unique=True)
+    played_at_utc_timestamp = Column(BigInteger, primary_key=True)
+    played_at_utc = Column(DateTime)
+    played_at_cet = Column(DateTime)
     day = Column(Integer)
     month = Column(Integer)
     year = Column(Integer)
@@ -87,6 +84,7 @@ class Play(Base):
     second = Column(Integer)
     day_of_week = Column(Integer)  # Monday: 0, Sunday: 6
     week_of_year = Column(Integer)
+    track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
 
     # Relationship
     track = relationship('Track', back_populates='plays')
@@ -98,8 +96,6 @@ class SQLiteConnection(object):
         self.db_path = db_path
         self.engine = create_engine('sqlite:///{}'.format(self.db_path))
         self.session = sessionmaker(autoflush=False)(bind=self.engine)
-        # self.drop_db()
-        # self.create_db()
 
     def drop_db(self):
         print("Dropping DB.")
@@ -114,8 +110,14 @@ class SQLiteConnection(object):
             self.session.add(instance)
             self.session.commit()
         except IntegrityError as e:
-            print("Skipped already there date.")
-            pass
+            print("Skipped. Already there.")
+            self.session.rollback()
+        except InvalidRequestError as e:
+            print("Skipped. Already there.")
+            self.session.rollback()
+        except sqlite3.IntegrityError as e:
+            print("Skipped. Already there.")
+            self.session.rollback()
 
     def save_instances(self, instances):
         for instance in instances:
