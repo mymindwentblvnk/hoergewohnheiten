@@ -104,7 +104,7 @@ class SpotifyConnection(object):
             self.db.save_instance(track)
         return track
 
-    def _get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
+    def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
         played_at_utc = util.convert_played_at_from_response_to_datetime(played_at_utc)
         played_at_utc = util.set_timezone_to_datetime(played_at_utc, timezone='UTC')
         played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
@@ -124,14 +124,14 @@ class SpotifyConnection(object):
         # Track
         track = self.get_track(track_id)
         play.track = track
+        play.track_id = track_id
         return play
 
     def _get_plays_from_response(self, response):
         plays = []
         for item in response['items']:
-            play = self._get_play_from_played_at_utc_and_track_id(item['played_at'],
-                                                                  item['track']['id'])
-            plays.append(play)
+            play_tuple = (item['played_at'], item['track']['id'])
+            plays.append(play_tuple)
         return plays
 
     def get_plays(self, limit=50, after=None):

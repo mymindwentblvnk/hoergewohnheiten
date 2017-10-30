@@ -12,9 +12,6 @@ from connections import SpotifyConnection
 from models import SQLiteConnection, Play
 
 
-CSV_HEADER = "played_at_as_utc,track_id"
-
-
 class GithubPullPushMixin(object):
 
     def git_pull(self):
@@ -42,8 +39,27 @@ class HoergewohnheitenManager(GithubPullPushMixin):
         self.db = SQLiteConnection(settings.DB_PATH)
         self.spotify = SpotifyConnection(db_connection=self.db)
 
+    def write_plays_to_csv(self, plays):
+        csv_file_path = '{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO,
+                                              self.year,
+                                              util.pad_number(self.month))
+        initial_write = False if os.path.exists(csv_file_path) else True
+        with open(csv_file_path, 'a') as f:
+            if initial_write:
+                f.write("{}\n".format(settings.CSV_HEADER))
+            for play in reversed(plays):  # Reverse tracks so latest play is at the bottom
+                played_at = int(play.played_at_utc_timestamp)
+                assert played_at == play.played_at_utc_timestamp  # Check if casting did no good
+                f.write("{},{}\n".format(played_at, play.track.track_id))
+
     def get_latest_plays(self, latest_played_at):
-        return self.spotify.get_plays(after=latest_played_at)
+        play_tuples = self.spotify.get_plays(after=latest_played_at)
+
+        plays = []
+        for played_at, track_id in play_tuples:
+            play = self.spotify.get_play_from_played_at_utc_and_track_id(played_at, track_id)
+            plays.append(play)
+        return plays
 
     def process(self):
         print(util.LOG_HEADER)
@@ -59,8 +75,11 @@ class HoergewohnheitenManager(GithubPullPushMixin):
             print("* Git pull")
             # self.git_pull()
 
+            print("* Saving plays to CSV file")
+            self.write_plays_to_csv(plays)
+
             print("* Saving plays to database")
-            # self.db.save_instances(plays, commit=True)
+            self.db.save_instances(plays)
 
             print("* Git push")
             # self.git_push()
