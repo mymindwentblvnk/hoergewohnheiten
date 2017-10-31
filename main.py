@@ -1,5 +1,4 @@
 # TODO
-# * check if database needs update (count rows vs. line count)
 # * convert old csv format in new format
 # * create views and create stats
 # * clean up code
@@ -55,6 +54,13 @@ class HoergewohnheitenManager(GithubPullPushMixin):
 
     def update_db(self):
         print("* Updating database")
+
+        count_rows_csv = util.rows_count_csv_files()
+        count_rows_db = self.db.rows_count_play
+        if count_rows_csv == count_rows_db:
+            print("> Database is already uptodate")
+            return
+
         for csv_file_path in glob('{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)):
             with open(csv_file_path, 'r') as csv_file:
                 lines = csv.reader(csv_file, delimiter=',')

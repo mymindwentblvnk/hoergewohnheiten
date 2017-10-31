@@ -123,3 +123,7 @@ class SQLiteConnection(object):
         timestamp = self.session.query(func.max(Play.played_at_utc_timestamp)).first()[0]
         if timestamp:
             return timestamp
+
+    @property
+    def rows_count_play(self):
+        return self.session.query(Play).count()

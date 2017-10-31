@@ -1,6 +1,8 @@
 from dateutil import tz
 from datetime import datetime
 
+from glob import glob
+
 import settings
 
 
@@ -48,3 +50,11 @@ def convert_datetime_from_timezone_to_timezone(datetime_to_convert, from_tz_code
     datetime_to_convert = datetime_to_convert.replace(tzinfo=from_tz)
     converted_datetime = datetime_to_convert.astimezone(to_tz)
     return converted_datetime
+
+def rows_count_csv_files():
+    count = 0
+    for csv_file_path in glob('{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)):
+        with open(csv_file_path, 'r') as csv_file:
+            lines = csv_file.readlines()
+            count += len(lines) - 1
+    return count
