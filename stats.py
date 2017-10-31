@@ -14,24 +14,6 @@ class HoergewohnheitenStatsMixin(object):
 
     last_n_tracks = 20
 
-    def _load_csv_files(self, year=None, month=None):
-        if not year and not month:  # All time
-            csv_file_paths = glob('{}/[2-9][0-9][0-9][0-9]-[0-1][0-9].csv'.format(settings.PATH_TO_DATA_REPO))
-        elif year and not month:  # Year
-            csv_file_paths = glob('{}/{}-[0-1][0-9].csv'.format(settings.PATH_TO_DATA_REPO, year))
-        elif year and month:  # Month
-            csv_file_paths = glob('{}/{}-{}.csv'.format(settings.PATH_TO_DATA_REPO, year, util.pad_number(month)))
-
-        data_frames = []
-        for index, path in enumerate(csv_file_paths, 1):
-            frame = pd.read_csv(path)
-            data_frames.append(frame)
-        return pd.concat(data_frames, ignore_index=True)
-
-    def _get_times(self):
-        times = pd.to_datetime(self.data_frame.played_at_as_utc)
-        return times + pd.Timedelta('{}:00:00'.format(util.pad_number(settings.HOURS_FROM_UTC)))
-
     def last_played_tracks(self):
         result = {}
         latest_plays = self.data_frame.tail(self.last_n_tracks)

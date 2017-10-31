@@ -98,11 +98,9 @@ class SQLiteConnection(object):
         self.session = sessionmaker(autoflush=False)(bind=self.engine)
 
     def drop_db(self):
-        print("Dropping DB.")
         Base.metadata.drop_all(bind=self.engine)
 
     def create_db(self):
-        print("Creating DB.")
         Base.metadata.create_all(bind=self.engine)
 
     def save_instance(self, instance):
@@ -110,13 +108,10 @@ class SQLiteConnection(object):
             self.session.add(instance)
             self.session.commit()
         except IntegrityError as e:
-            print("Skipped. Already there.")
+            print("> Skipped")
             self.session.rollback()
         except InvalidRequestError as e:
-            print("Skipped. Already there.")
-            self.session.rollback()
-        except sqlite3.IntegrityError as e:
-            print("Skipped. Already there.")
+            print("> Skipped")
             self.session.rollback()
 
     def save_instances(self, instances):
