@@ -3,74 +3,22 @@ from datetime import datetime
 from spotipy import Spotify
 import spotipy.util
 
-import pyowm
+from models import AudioFeature, Album, Artist, Play, Track
 
 import settings
 import util
 
 
-
-def convert_played_at_from_response_to_datetime(played_at):
-    try:
-        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except:
-        # For the single moment where the played at time hits a full second
-        return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
-
-
-class AudioFeature(object):
-
-    def __init__(self, tempo='', energy='', valence=''):
-        self.tempo = tempo
-        self.energy = energy
-        self.valence = valence
-
-
-class Album(object):
-
-    def __init__(self, album_id, album_name, album_url, album_genres, cover_url, artist):
-        self.album_id = album_id
-        self.album_name = album_name
-        self.album_url = album_url
-        self.album_genres = album_genres
-        self.cover_url = cover_url
-        self.artist = artist
-
-
-class Artist(object):
-
-    def __init__(self, artist_id, artist_name, artist_picture_url, artist_url):
-        self.artist_id = artist_id
-        self.artist_name = artist_name
-        self.artist_picture_url = artist_picture_url
-        self.artist_url = artist_url
-
-
-class Track(object):
-
-    def __init__(self, track_id, track_name, track_url, artist, album, audio_feature=None, played_at=None):
-        self.track_id = track_id
-        self.track_name = track_name
-        self.track_url = track_url
-        self.artist = artist
-        self.album = album
-        self.audio_feature = audio_feature
-        self.played_at = played_at
-
-
 class SpotifyConnection(object):
 
-    def __init__(self):
+    def __init__(self, db_connection):
         token = spotipy.util.prompt_for_user_token(settings.SPOTIFY_USER_NAME,
                                                    scope='user-read-recently-played',
                                                    client_id=settings.SPOTIFY_CLIENT_ID,
                                                    client_secret=settings.SPOTIFY_CLIENT_SECRET,
                                                    redirect_uri=settings.SPOTIFY_REDIRECT_URI)
         self.client = Spotify(auth=token)
-        self.album_cache = {}
-        self.artist_cache = {}
-        self.audio_feature_cache = {}
-        self.track_cache = {}
+        self.db = db_connection
 
     def _get_image_url_from_response(self, response):
         try:
@@ -79,121 +27,141 @@ class SpotifyConnection(object):
             pass
 
     def get_audio_feature(self, track_id):
-        if track_id not in self.audio_feature_cache:
+        audio_feature = self.db.session.query(AudioFeature).get(track_id)
+
+        if not audio_feature:
+            print("> Audio Feature {} not in database".format(track_id))
             response = self.client.audio_features(track_id)[0]
             if response:  # Some tracks do not have audio features
-                audio_feature = AudioFeature(tempo=response['tempo'],
-                                             energy=response['energy'],
-                                             valence=response['valence'])
-                self.audio_feature_cache[track_id] = audio_feature
+                audio_feature = AudioFeature()
+                audio_feature.track_id = track_id
+                audio_feature.tempo = response['tempo']
+                audio_feature.energy = response['energy']
+                audio_feature.valence = response['valence']
+                self.db.save_instance(audio_feature)
             else:
-                return AudioFeature()
-        return self.audio_feature_cache[track_id]
-
-    def get_album(self, album_id):
-        if album_id not in self.album_cache:
-            response = self.client.album(album_id)
-            artist = self.get_artist(response['artists'][0]['id'])
-            album = Album(album_id=response['id'],
-                          album_name=response['name'],
-                          album_url=response['external_urls']['spotify'],
-                          album_genres=response['genres'],
-                          cover_url=self._get_image_url_from_response(response),
-                          artist=artist)
-            self.album_cache[album_id] = album
-        return self.album_cache[album_id]
+                audio_feature = None
+        return audio_feature
 
     def get_artist(self, artist_id):
-        if artist_id not in self.artist_cache:
+        artist = self.db.session.query(Artist).get(artist_id)
+        if not artist:
+            print("> Artist {} not in database".format(artist_id))
             response = self.client.artist(artist_id)
-            artist = Artist(artist_id=response['id'],
-                            artist_name=response['name'],
-                            artist_picture_url=self._get_image_url_from_response(response),
-                            artist_url=response['external_urls']['spotify'])
-            self.artist_cache[artist_id] = artist
-        return self.artist_cache[artist_id]
+            artist = Artist()
+            artist.artist_id = response['id']
+            artist.artist_name = response['name']
+            artist.image_url = self._get_image_url_from_response(response)
+            artist.spotify_url = response['external_urls']['spotify']
+            self.db.save_instance(artist)
+        return artist
+
+    def get_artists(self, artist_ids):
+        artists = []
+        for artist_id in artist_ids:
+            artists.append(self.get_artist(artist_id))
+        return artists
+
+    def get_album(self, album_id):
+        album = self.db.session.query(Album).get(album_id)
+        if not album:
+            print("> Album {} not in database".format(album_id))
+            response = self.client.album(album_id)
+            artist_ids = [a['id'] for a in response['artists']]
+            artists = self.get_artists(artist_ids)
+
+            album = Album()
+            album.album_id = response['id']
+            album.album_name = response['name']
+            album.spotify_url = response['external_urls']['spotify']
+            album.image_url = self._get_image_url_from_response(response)
+            album.artists = artists
+            self.db.save_instance(album)
+        return album
 
     def get_track(self, track_id):
-        if track_id not in self.track_cache:
+        track = self.db.session.query(Track).get(track_id)
+        if not track:
+            print("> Track {} not in database".format(track_id))
             response = self.client.track(track_id)
-            artist = self.get_artist(response['artists'][0]['id'])
+            artist_ids = [a['id'] for a in response['artists']]
+            artists = self.get_artists(artist_ids)
             album = self.get_album(response['album']['id'])
-            track = Track(track_id=track_id,
-                          track_name=response['name'],
-                          track_url=response['external_urls']['spotify'],
-                          artist=artist,
-                          album=album)
-            self.track_cache[track_id] = track
-        return self.track_cache[track_id]
+            audio_feature = self.get_audio_feature(track_id)
 
-    def get_tracks(self, track_ids):
-        tracks = []
-        for chunk in util.chunks(track_ids, 50):
-            responses = self.client.tracks(chunk)
-            for response in responses['tracks']:
-                track_id = response['id']
-                artist = self.get_artist(response['artists'][0]['id'])
-                album = self.get_album(response['album']['id'])
-                track = Track(track_id=track_id,
-                              track_name=response['name'],
-                              track_url=response['external_urls']['spotify'],
-                              artist=artist,
-                              album=album)
-                self.track_cache[track_id] = track
-                tracks.append(track)
-        return tracks
+            track = Track()
+            track.track_id = track_id
+            track.track_name = response['name']
+            track.spotify_url = response['external_urls']['spotify']
+            track.artists = artists
+            track.album = album
+            track.audio_feature = audio_feature
+            # Save
+            self.db.save_instance(track)
+        return track
 
-    def _get_tracks_from_response(self, response):
-        tracks = []
+    def get_play_from_played_at_utc_timestamp_and_track_id(self,
+                                                           played_at_utc_timestamp,
+                                                           track_id):
+        played_at_utc = datetime.utcfromtimestamp(played_at_utc_timestamp/1000)
+        played_at_utc = util.set_timezone_to_datetime(played_at_utc, timezone='UTC')
+        played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
+        # Play
+        play = Play()
+        play.played_at_utc_timestamp = played_at_utc_timestamp
+        play.played_at_utc = played_at_utc
+        play.played_at_cet = played_at_cet
+        play.day = played_at_cet.day
+        play.month = played_at_cet.month
+        play.year = played_at_cet.year
+        play.hour = played_at_cet.hour
+        play.minute = played_at_cet.minute
+        play.second = played_at_cet.second
+        play.day_of_week = played_at_cet.weekday()
+        play.week_of_year = played_at_cet.date().isocalendar()[1]
+        # Track
+        track = self.get_track(track_id)
+        play.track = track
+        play.track_id = track_id
+        return play
+
+    def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
+        played_at_utc = util.convert_played_at_from_response_to_datetime(played_at_utc)
+        played_at_utc = util.set_timezone_to_datetime(played_at_utc, timezone='UTC')
+        played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
+        # Play
+        play = Play()
+        play.played_at_utc_timestamp = played_at_utc.timestamp() * 1000
+        play.played_at_utc = played_at_utc
+        play.played_at_cet = played_at_cet
+        play.day = played_at_cet.day
+        play.month = played_at_cet.month
+        play.year = played_at_cet.year
+        play.hour = played_at_cet.hour
+        play.minute = played_at_cet.minute
+        play.second = played_at_cet.second
+        play.day_of_week = played_at_cet.weekday()
+        play.week_of_year = played_at_cet.date().isocalendar()[1]
+        # Track
+        track = self.get_track(track_id)
+        play.track = track
+        play.track_id = track_id
+        return play
+
+    def _get_play_tuples_from_response(self, response):
+        plays = []
         for item in response['items']:
-            played_at_as_utc = item['played_at']
-            played_at = convert_played_at_from_response_to_datetime(played_at_as_utc)
+            play_tuple = (item['played_at'], item['track']['id'])
+            plays.append(play_tuple)
+        return plays
 
-            response_track = item['track']
-
-            album = self.get_album(response_track['album']['id'])
-            artist = self.get_artist(response_track['artists'][0]['id'])
-            audio_feature = self.get_audio_feature(response_track['id'])
-            track = Track(track_id=response_track['id'],
-                          track_name=response_track['name'],
-                          track_url=response_track['external_urls']['spotify'],
-                          artist=artist,
-                          album=album,
-                          audio_feature=audio_feature,
-                          played_at=played_at)
-            tracks.append(track)
-        return tracks
-
-    def get_recently_played_tracks(self, limit=50, after=None):
-        tracks = []
+    def get_play_tuples(self, limit=50, after=None):
+        plays = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        tracks.extend(self._get_tracks_from_response(response))
+        plays.extend(self._get_play_tuples_from_response(response))
 
         while 'next' in response:
             response = self.client.next(response)
-            tracks.extend(self._get_tracks_from_response(response))
-        return tracks
+            plays.extend(self._get_play_tuples_from_response(response))
 
-
-class Weather(object):
-
-    def __init__(self, temperature='', status=''):
-        self.temperature = temperature
-        self.status = status
-
-
-class OWMConnection(object):
-
-    def __init__(self):
-        self.owm = pyowm.OWM(settings.OPEN_WEATHER_MAP_API_KEY)
-
-    def get_weather(self):
-        try:
-            observation = self.owm.weather_at_id(settings.OPEN_WATHER_MAP_NUREMBERG_ID)
-            weather = observation.get_weather()
-            temperature = weather.get_temperature(unit='celsius')['temp']
-            weather_status = weather.get_detailed_status()
-            return Weather(temperature=temperature,
-                           status=weather_status)
-        except:
-            return Weather()
+        return plays
