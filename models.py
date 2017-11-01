@@ -1,9 +1,9 @@
-from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, desc, func
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, func
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.schema import Table, Index, Sequence
+from sqlalchemy.schema import Table
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 

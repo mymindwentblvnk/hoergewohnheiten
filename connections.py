@@ -3,12 +3,10 @@ from datetime import datetime
 from spotipy import Spotify
 import spotipy.util
 
-from models import SQLiteConnection
 from models import AudioFeature, Album, Artist, Play, Track
 
 import settings
 import util
-
 
 
 class SpotifyConnection(object):
@@ -37,9 +35,9 @@ class SpotifyConnection(object):
             if response:  # Some tracks do not have audio features
                 audio_feature = AudioFeature()
                 audio_feature.track_id = track_id
-                audio_feature.tempo=response['tempo']
-                audio_feature.energy=response['energy']
-                audio_feature.valence=response['valence']
+                audio_feature.tempo = response['tempo']
+                audio_feature.energy = response['energy']
+                audio_feature.valence = response['valence']
                 self.db.save_instance(audio_feature)
             else:
                 audio_feature = None
@@ -51,10 +49,10 @@ class SpotifyConnection(object):
             print("> Artist {} not in database".format(artist_id))
             response = self.client.artist(artist_id)
             artist = Artist()
-            artist.artist_id=response['id']
-            artist.artist_name=response['name']
-            artist.image_url=self._get_image_url_from_response(response)
-            artist.spotify_url=response['external_urls']['spotify']
+            artist.artist_id = response['id']
+            artist.artist_name = response['name']
+            artist.image_url = self._get_image_url_from_response(response)
+            artist.spotify_url = response['external_urls']['spotify']
             self.db.save_instance(artist)
         return artist
 
@@ -73,11 +71,10 @@ class SpotifyConnection(object):
             artists = self.get_artists(artist_ids)
 
             album = Album()
-            album.album_id=response['id']
-            album.album_name=response['name']
-            album.spotify_url=response['external_urls']['spotify']
-            # album_genres=response['genres'],
-            album.image_url=self._get_image_url_from_response(response)
+            album.album_id = response['id']
+            album.album_name = response['name']
+            album.spotify_url = response['external_urls']['spotify']
+            album.image_url = self._get_image_url_from_response(response)
             album.artists = artists
             self.db.save_instance(album)
         return album

@@ -1,11 +1,7 @@
-# TODO
-# * create views and create stats
-
 from datetime import datetime
 import os
 from glob import glob
 import csv
-import json
 
 from git import Repo
 
@@ -13,7 +9,7 @@ import settings
 import util
 
 from connections import SpotifyConnection
-from models import SQLiteConnection, Play
+from models import SQLiteConnection
 
 
 class GithubPullPushMixin(object):
@@ -113,6 +109,7 @@ class HoergewohnheitenManager(GithubPullPushMixin):
 
             print("* Git push")
             # self.git_push()
+
 
 if __name__ == '__main__':
     print(util.LOG_HEADER)
