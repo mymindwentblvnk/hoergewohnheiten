@@ -3,8 +3,6 @@ from datetime import datetime
 from spotipy import Spotify
 import spotipy.util
 
-import pyowm
-
 from models import SQLiteConnection
 from models import AudioFeature, Album, Artist, Play, Track
 

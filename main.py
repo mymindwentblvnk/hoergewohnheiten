@@ -1,7 +1,5 @@
 # TODO
-# * convert old csv format in new format
 # * create views and create stats
-# * clean up code
 
 from datetime import datetime
 import os
@@ -110,6 +108,8 @@ class HoergewohnheitenManager(GithubPullPushMixin):
 
             print("* Saving plays to database")
             self.db.save_instances(plays)
+
+            print("* Creating stats")
 
             print("* Git push")
             # self.git_push()

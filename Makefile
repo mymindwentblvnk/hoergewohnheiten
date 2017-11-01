@@ -18,3 +18,8 @@ db:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Creating database.";
 	. ${VENV_NAME}/bin/activate; python create_db.py; deactivate 
+
+flake8:
+	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
+	@echo "Checking for PEP 8.";
+	. ${VENV_NAME}/bin/activate; flake8 . --exclude venv; deactivate 

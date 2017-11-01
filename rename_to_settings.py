@@ -5,5 +5,8 @@ SPOTIFY_USER_NAME = ''
 
 PATH_TO_DATA_REPO = ''
 DB_FILE_NAME = ''
+DB_PATH = '{}/{}'.format(PATH_TO_DATA_REPO, DB_FILE_NAME)
 
 TARGET_TIMEZONE = ''
+
+CSV_HEADER = "played_at_utc_timestamp,track_id"

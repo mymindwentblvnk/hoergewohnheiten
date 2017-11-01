@@ -2,5 +2,6 @@ spotipy==2.4.4
 pudb==2017.1.2
 ptpython==0.41
 GitPython==2.1.5
-pyowm==2.7.1
-pandas==0.20.3
+SQLAlchemy==1.1.14
+python-dateutil==2.6.1
+flake8==3.5.0
