@@ -108,10 +108,8 @@ class SQLiteConnection(object):
             self.session.add(instance)
             self.session.commit()
         except IntegrityError as e:
-            print("> Skipped")
             self.session.rollback()
         except InvalidRequestError as e:
-            print("> Skipped")
             self.session.rollback()
 
     def save_instances(self, instances):

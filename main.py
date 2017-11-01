@@ -26,7 +26,7 @@ class GithubPullPushMixin(object):
             files.extend(found_files)
         repo = Repo(settings.PATH_TO_DATA_REPO)
         repo.index.add(files)
-        repo.index.commit("Updating files.")
+        repo.index.commit("Update files.")
         repo.remote('origin').push()
 
 
