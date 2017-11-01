@@ -38,7 +38,6 @@ class HoergewohnheitenManager(GithubPullPushMixin):
 
         self.init_db()
         self.spotify = SpotifyConnection(db_connection=self.db)
-        self.update_db()
 
     def init_db(self):
         self.db = SQLiteConnection(settings.DB_PATH)
