@@ -19,7 +19,7 @@ class GithubPullPushMixin(object):
         origin = repo.remotes.origin
         origin.pull()
 
-    def git_push(self, extensions=('csv', 'json')):
+    def git_push(self, extensions=('csv', 'json', 'sqlite')):
         files = []
         for extension in extensions:
             found_files = glob('{}/*.{}'.format(settings.PATH_TO_DATA_REPO, extension))
@@ -96,7 +96,7 @@ class HoergewohnheitenManager(GithubPullPushMixin):
 
         if plays:
             print("* Git pull")
-            # self.git_pull()
+            self.git_pull()
 
             print("* Saving plays to CSV file")
             self.write_plays_to_csv(plays)
@@ -107,7 +107,7 @@ class HoergewohnheitenManager(GithubPullPushMixin):
             print("* Creating stats")
 
             print("* Git push")
-            # self.git_push()
+            self.git_push()
 
 
 if __name__ == '__main__':
