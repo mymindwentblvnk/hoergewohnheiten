@@ -12,9 +12,11 @@ from connections import SpotifyConnection
 
 
 
-def main(spotify_connection):
+def import_old_plays(spotify_connection):
     print("* Loading csv files")
     for csv_file_path in glob('{}/[0-9][0-9][0-9][0-9]-[0-9][0-9].csv'.format(settings.PATH_TO_DATA_REPO)):
+        print("* Working", csv_file_path)
+        plays = []
         with open(csv_file_path, 'r') as csv_file:
             lines = csv.reader(csv_file, delimiter=',')
             for line_number, line in enumerate(lines, 1):
@@ -23,7 +25,8 @@ def main(spotify_connection):
                 timestamp = int(line[0])
                 played_at = datetime.fromtimestamp(timestamp/1000).strftime('%Y-%m-%dT%H:%M:%SZ')
                 play = spotify_connection.get_play_from_played_at_utc_and_track_id(played_at, line[1])
-                spotify_connection.db.save_instance(play)
+                plays.append(play)
+        spotify_connection.db.save_instances(plays)
 
 
 if __name__ == '__main__':
@@ -33,4 +36,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     spotify_connection = SpotifyConnection(settings.SPOTIFY_USERS[args.user_name])
-    main(spotify_connection)
+    import_old_plays(spotify_connection)
