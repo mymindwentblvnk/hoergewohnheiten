@@ -1,4 +1,6 @@
-from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, func
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, func, asc
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
@@ -6,19 +8,19 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
+import settings
+
 
 Base = declarative_base()
 
 
-class AudioFeature(Base):
+class Artist(Base):
 
-    __tablename__ = 't_audio_feature'
-    track_id = Column(String, ForeignKey('t_track.track_id'), primary_key=True, index=True)
-    tempo = Column(Float)
-    energy = Column(Float)
-    valence = Column(Float)
-    # Relationships
-    track = relationship('Track', back_populates='audio_feature')
+    __tablename__ = 't_artist'
+    artist_id = Column(String, primary_key=True, index=True)
+    artist_name = Column(String)
+    spotify_url = Column(String)
+    image_url = Column(String)
 
 
 album_artists = Table('t_album_artists',
@@ -46,28 +48,21 @@ track_artists = Table('t_track_artists',
                       Column('artist_id', String, ForeignKey('t_artist.artist_id')))
 
 
-class Artist(Base):
-
-    __tablename__ = 't_artist'
-    artist_id = Column(String, primary_key=True, index=True)
-    artist_name = Column(String)
-    spotify_url = Column(String)
-    image_url = Column(String)
-
-
 class Track(Base):
 
     __tablename__ = 't_track'
     track_id = Column(String, primary_key=True, index=True)
     track_name = Column(String)
     spotify_url = Column(String)
+    tempo = Column(Float)
+    energy = Column(Float)
+    valence = Column(Float)
     album_id = Column(String, ForeignKey('t_album.album_id'))
 
     # Relationships
     plays = relationship('Play', back_populates='track')
     album = relationship('Album', back_populates='tracks')
     artists = relationship('Artist', secondary=track_artists)
-    audio_feature = relationship('AudioFeature', back_populates='track', uselist=False)
 
 
 class Play(Base):
@@ -85,9 +80,46 @@ class Play(Base):
     day_of_week = Column(Integer)  # Monday: 0, Sunday: 6
     week_of_year = Column(Integer)
     track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
+    user_name = Column(String)
 
     # Relationship
     track = relationship('Track', back_populates='plays')
+
+    @property
+    def csv_string(self):
+        return "{},{},{}".format(self.played_at_utc_timestamp,
+                                 self.track_id,
+                                 self.user_name)
+
+
+class PostgreSQLConnection(object):
+
+    def __init__(self):
+        self.engine = create_engine('postgres://{}:{}@{}:{}/{}'.format(settings.POSTGRES_CONNECTION_INFORMATION['user'],
+                                                                       settings.POSTGRES_CONNECTION_INFORMATION['password'],
+                                                                       settings.POSTGRES_CONNECTION_INFORMATION['host'],
+                                                                       settings.POSTGRES_CONNECTION_INFORMATION['port'],
+                                                                       settings.POSTGRES_CONNECTION_INFORMATION['database']))
+        self.session = sessionmaker(autoflush=False)(bind=self.engine)
+
+    def drop_db(self):
+        Base.metadata.drop_all(bind=self.engine)
+
+    def create_db(self):
+        Base.metadata.create_all(bind=self.engine)
+
+    def save_instance(self, instance):
+        try:
+            self.session.add(instance)
+            self.session.commit()
+        except IntegrityError as e:
+            self.session.rollback()
+        except InvalidRequestError as e:
+            self.session.rollback()
+
+    def save_instances(self, instances):
+        for instance in instances:
+            self.save_instance(instance)
 
 
 class SQLiteConnection(object):
@@ -115,12 +147,6 @@ class SQLiteConnection(object):
     def save_instances(self, instances):
         for instance in instances:
             self.save_instance(instance)
-
-    @property
-    def latest_played_at_utc_timestamp(self):
-        timestamp = self.session.query(func.max(Play.played_at_utc_timestamp)).first()[0]
-        if timestamp:
-            return timestamp
 
     @property
     def rows_count_play(self):

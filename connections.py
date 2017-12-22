@@ -3,7 +3,7 @@ from datetime import datetime
 from spotipy import Spotify
 import spotipy.util
 
-from models import AudioFeature, Album, Artist, Play, Track
+from models import Album, Artist, Play, Track, PostgreSQLConnection
 
 import settings
 import util
@@ -11,14 +11,18 @@ import util
 
 class SpotifyConnection(object):
 
-    def __init__(self, db_connection):
-        token = spotipy.util.prompt_for_user_token(settings.SPOTIFY_USER_NAME,
+    def __init__(self, user_data):
+        self.user_name = user_data['user_name']
+        token = spotipy.util.prompt_for_user_token(self.user_name,
                                                    scope='user-read-recently-played',
-                                                   client_id=settings.SPOTIFY_CLIENT_ID,
-                                                   client_secret=settings.SPOTIFY_CLIENT_SECRET,
-                                                   redirect_uri=settings.SPOTIFY_REDIRECT_URI)
+                                                   client_id=user_data['client_id'],
+                                                   client_secret=user_data['client_secret'],
+                                                   redirect_uri=user_data['redirect_uri'])
         self.client = Spotify(auth=token)
-        self.db = db_connection
+        self.db = self.init_db()
+
+    def init_db(self):
+        return PostgreSQLConnection()
 
     def _get_image_url_from_response(self, response):
         try:
@@ -26,27 +30,9 @@ class SpotifyConnection(object):
         except IndexError:
             pass
 
-    def get_audio_feature(self, track_id):
-        audio_feature = self.db.session.query(AudioFeature).get(track_id)
-
-        if not audio_feature:
-            print("> Audio Feature {} not in database".format(track_id))
-            response = self.client.audio_features(track_id)[0]
-            if response:  # Some tracks do not have audio features
-                audio_feature = AudioFeature()
-                audio_feature.track_id = track_id
-                audio_feature.tempo = response['tempo']
-                audio_feature.energy = response['energy']
-                audio_feature.valence = response['valence']
-                self.db.save_instance(audio_feature)
-            else:
-                audio_feature = None
-        return audio_feature
-
     def get_artist(self, artist_id):
         artist = self.db.session.query(Artist).get(artist_id)
         if not artist:
-            print("> Artist {} not in database".format(artist_id))
             response = self.client.artist(artist_id)
             artist = Artist()
             artist.artist_id = response['id']
@@ -54,6 +40,7 @@ class SpotifyConnection(object):
             artist.image_url = self._get_image_url_from_response(response)
             artist.spotify_url = response['external_urls']['spotify']
             self.db.save_instance(artist)
+            print("> Artist {} was not in database. Now is.".format(artist.artist_name))
         return artist
 
     def get_artists(self, artist_ids):
@@ -65,7 +52,6 @@ class SpotifyConnection(object):
     def get_album(self, album_id):
         album = self.db.session.query(Album).get(album_id)
         if not album:
-            print("> Album {} not in database".format(album_id))
             response = self.client.album(album_id)
             artist_ids = [a['id'] for a in response['artists']]
             artists = self.get_artists(artist_ids)
@@ -77,17 +63,16 @@ class SpotifyConnection(object):
             album.image_url = self._get_image_url_from_response(response)
             album.artists = artists
             self.db.save_instance(album)
+            print("> Album {} was not in database. Now is.".format(album.album_name))
         return album
 
     def get_track(self, track_id):
         track = self.db.session.query(Track).get(track_id)
         if not track:
-            print("> Track {} not in database".format(track_id))
             response = self.client.track(track_id)
             artist_ids = [a['id'] for a in response['artists']]
             artists = self.get_artists(artist_ids)
             album = self.get_album(response['album']['id'])
-            audio_feature = self.get_audio_feature(track_id)
 
             track = Track()
             track.track_id = track_id
@@ -95,35 +80,16 @@ class SpotifyConnection(object):
             track.spotify_url = response['external_urls']['spotify']
             track.artists = artists
             track.album = album
-            track.audio_feature = audio_feature
+            # Audio feature
+            audio_feature_response = self.client.audio_features(track_id)[0]
+            if audio_feature_response:  # Some tracks do not have audio features
+                track.tempo = audio_feature_response['tempo']
+                track.energy = audio_feature_response['energy']
+                track.valence = audio_feature_response['valence']
             # Save
             self.db.save_instance(track)
+            print("> Track {} was not in database. Now is.".format(track.track_name))
         return track
-
-    def get_play_from_played_at_utc_timestamp_and_track_id(self,
-                                                           played_at_utc_timestamp,
-                                                           track_id):
-        played_at_utc = datetime.utcfromtimestamp(played_at_utc_timestamp/1000)
-        played_at_utc = util.set_timezone_to_datetime(played_at_utc, timezone='UTC')
-        played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
-        # Play
-        play = Play()
-        play.played_at_utc_timestamp = played_at_utc_timestamp
-        play.played_at_utc = played_at_utc
-        play.played_at_cet = played_at_cet
-        play.day = played_at_cet.day
-        play.month = played_at_cet.month
-        play.year = played_at_cet.year
-        play.hour = played_at_cet.hour
-        play.minute = played_at_cet.minute
-        play.second = played_at_cet.second
-        play.day_of_week = played_at_cet.weekday()
-        play.week_of_year = played_at_cet.date().isocalendar()[1]
-        # Track
-        track = self.get_track(track_id)
-        play.track = track
-        play.track_id = track_id
-        return play
 
     def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
         played_at_utc = util.convert_played_at_from_response_to_datetime(played_at_utc)
@@ -131,6 +97,7 @@ class SpotifyConnection(object):
         played_at_cet = util.convert_datetime_from_timezone_to_timezone(played_at_utc)
         # Play
         play = Play()
+        play.user_name = self.user_name
         play.played_at_utc_timestamp = played_at_utc.timestamp() * 1000
         play.played_at_utc = played_at_utc
         play.played_at_cet = played_at_cet
@@ -155,13 +122,25 @@ class SpotifyConnection(object):
             plays.append(play_tuple)
         return plays
 
-    def get_play_tuples(self, limit=50, after=None):
-        plays = []
+    def _get_play_tuples(self, limit=50, after=None):
+        play_tuples = []
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
-        plays.extend(self._get_play_tuples_from_response(response))
+        play_tuples.extend(self._get_play_tuples_from_response(response))
 
         while 'next' in response:
             response = self.client.next(response)
-            plays.extend(self._get_play_tuples_from_response(response))
+            play_tuples.extend(self._get_play_tuples_from_response(response))
 
-        return plays
+        return play_tuples
+
+    def extract_plays(self):
+        print("* Extracting latest plays of {} from Spotify API.".format(self.user_name))
+        play_tuples = self._get_play_tuples()
+
+        plays = []
+        for played_at, track_id in play_tuples:
+            play = self.get_play_from_played_at_utc_and_track_id(played_at, track_id)
+            plays.append(play)
+
+        print("* Saving plays to database.")
+        self.db.save_instance(plays)
