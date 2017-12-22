@@ -36,6 +36,7 @@ class Album(Base):
     album_name = Column(String)
     spotify_url = Column(String)
     image_url = Column(String)
+    release_date = Column(DateTime)
     # Tracks (1:n)
     tracks = relationship('Track')
     # Artists (n:m)

@@ -49,6 +49,17 @@ class SpotifyConnection(object):
             artists.append(self.get_artist(artist_id))
         return artists
 
+    def _get_release_date_from_album_response(self, album_response):
+        if 'release_date' in album_response:
+            precision = album_response['release_date_precision']
+            if precision == 'day':
+                format_string = '%Y-%m-%d'
+            elif precision == 'month':
+                format_string = '%Y-%m'
+            elif precision == 'year':
+                format_string = '%Y'
+            return datetime.strptime(album_response['release_date'], format_string)
+
     def get_album(self, album_id):
         album = self.db.session.query(Album).get(album_id)
         if not album:
@@ -62,6 +73,7 @@ class SpotifyConnection(object):
             album.spotify_url = response['external_urls']['spotify']
             album.image_url = self._get_image_url_from_response(response)
             album.artists = artists
+            album.release_date = self._get_release_date_from_album_response(response)
             self.db.save_instance(album)
             print("> Album {} was not in database. Now is.".format(album.album_name))
         return album
