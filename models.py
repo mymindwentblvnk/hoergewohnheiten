@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, func, asc
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table
@@ -14,56 +15,16 @@ import settings
 Base = declarative_base()
 
 
-class Artist(Base):
-
-    __tablename__ = 't_artist'
-    artist_id = Column(String, primary_key=True, index=True)
-    artist_name = Column(String)
-    spotify_url = Column(String)
-    image_url = Column(String)
-
-
-album_artists = Table('t_album_artists',
-                      Base.metadata,
-                      Column('album_id', String, ForeignKey('t_album.album_id')),
-                      Column('artist_id', String, ForeignKey('t_artist.artist_id')))
-
-
-class Album(Base):
-
-    __tablename__ = 't_album'
-    album_id = Column(String, primary_key=True, index=True)
-    album_name = Column(String)
-    spotify_url = Column(String)
-    image_url = Column(String)
-    release_date = Column(DateTime)
-    # Tracks (1:n)
-    tracks = relationship('Track')
-    # Artists (n:m)
-    artists = relationship('Artist', secondary=album_artists)
-
-
-track_artists = Table('t_track_artists',
-                      Base.metadata,
-                      Column('track_id', String, ForeignKey('t_track.track_id')),
-                      Column('artist_id', String, ForeignKey('t_artist.artist_id')))
-
-
 class Track(Base):
 
     __tablename__ = 't_track'
     track_id = Column(String, primary_key=True, index=True)
-    track_name = Column(String)
-    spotify_url = Column(String)
-    tempo = Column(Float)
-    energy = Column(Float)
-    valence = Column(Float)
-    album_id = Column(String, ForeignKey('t_album.album_id'))
+    track_data = Column(JSON, nullable=False)
+    album_data = Column(JSON, nullable=False)
+    audio_feature_data = Column(JSON)
 
     # Relationships
     plays = relationship('Play', back_populates='track')
-    album = relationship('Album', back_populates='tracks')
-    artists = relationship('Artist', secondary=track_artists)
 
 
 class Play(Base):

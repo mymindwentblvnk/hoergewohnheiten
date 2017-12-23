@@ -3,7 +3,7 @@ from datetime import datetime
 from spotipy import Spotify
 import spotipy.util
 
-from models import Album, Artist, Play, Track, PostgreSQLConnection
+from models import Play, Track, PostgreSQLConnection
 
 import settings
 import util
@@ -24,83 +24,23 @@ class SpotifyConnection(object):
     def init_db(self):
         return PostgreSQLConnection()
 
-    def _get_image_url_from_response(self, response):
-        try:
-            return response['images'][0]['url']
-        except IndexError:
-            pass
-
-    def get_artist(self, artist_id):
-        artist = self.db.session.query(Artist).get(artist_id)
-        if not artist:
-            response = self.client.artist(artist_id)
-            artist = Artist()
-            artist.artist_id = response['id']
-            artist.artist_name = response['name']
-            artist.image_url = self._get_image_url_from_response(response)
-            artist.spotify_url = response['external_urls']['spotify']
-            self.db.save_instance(artist)
-            print("> Artist {} was not in database. Now is.".format(artist.artist_name))
-        return artist
-
-    def get_artists(self, artist_ids):
-        artists = []
-        for artist_id in artist_ids:
-            artists.append(self.get_artist(artist_id))
-        return artists
-
-    def _get_release_date_from_album_response(self, album_response):
-        if 'release_date' in album_response:
-            precision = album_response['release_date_precision']
-            if precision == 'day':
-                format_string = '%Y-%m-%d'
-            elif precision == 'month':
-                format_string = '%Y-%m'
-            elif precision == 'year':
-                format_string = '%Y'
-            return datetime.strptime(album_response['release_date'], format_string)
-
-    def get_album(self, album_id):
-        album = self.db.session.query(Album).get(album_id)
-        if not album:
-            response = self.client.album(album_id)
-            artist_ids = [a['id'] for a in response['artists']]
-            artists = self.get_artists(artist_ids)
-
-            album = Album()
-            album.album_id = response['id']
-            album.album_name = response['name']
-            album.spotify_url = response['external_urls']['spotify']
-            album.image_url = self._get_image_url_from_response(response)
-            album.artists = artists
-            album.release_date = self._get_release_date_from_album_response(response)
-            self.db.save_instance(album)
-            print("> Album {} was not in database. Now is.".format(album.album_name))
-        return album
-
     def get_track(self, track_id):
         track = self.db.session.query(Track).get(track_id)
         if not track:
             response = self.client.track(track_id)
-            artist_ids = [a['id'] for a in response['artists']]
-            artists = self.get_artists(artist_ids)
-            album = self.get_album(response['album']['id'])
+            album_response = self.client.album(response['album']['id'])
 
             track = Track()
             track.track_id = track_id
-            track.track_name = response['name']
-            track.spotify_url = response['external_urls']['spotify']
-            track.artists = artists
-            track.album = album
+            track.track_data = response
+            track.album_data = album_response
             # Audio feature
             audio_feature_response = self.client.audio_features(track_id)[0]
             if audio_feature_response:  # Some tracks do not have audio features
-                track.tempo = audio_feature_response['tempo']
-                track.energy = audio_feature_response['energy']
-                track.valence = audio_feature_response['valence']
+                track.audio_feature_data = audio_feature_response
             # Save
             self.db.save_instance(track)
-            print("> Track {} was not in database. Now is.".format(track.track_name))
+            print("> Track {} was not in database. Now is.".format(track.track_data['name']))
         return track
 
     def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
