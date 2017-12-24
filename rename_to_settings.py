@@ -1,12 +1,19 @@
-SPOTIFY_CLIENT_ID = ''
-SPOTIFY_CLIENT_SECRET = ''
-SPOTIFY_REDIRECT_URI = ''
-SPOTIFY_USER_NAME = ''
+SPOTIFY_USERS = {
+    '<user_name>': {
+        'client_id': '<client_id>',
+        'client_secret': '<client_secret>',
+        'redirect_uri': '<redirect_uri>',
+        'user_name': '<user_name>',
+    },
+    # ...
+}
 
-PATH_TO_DATA_REPO = ''
-DB_FILE_NAME = ''
-DB_PATH = '{}/{}'.format(PATH_TO_DATA_REPO, DB_FILE_NAME)
+POSTGRES_CONNECTION_INFORMATION = {
+    'host': '<host>',
+    'database': '<database>',
+    'port': '<port>',
+    'user': '<user>',
+    'password': '<password>',
+}
 
 TARGET_TIMEZONE = ''
-
-CSV_HEADER = "played_at_utc_timestamp,track_id"
