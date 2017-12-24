@@ -21,8 +21,7 @@ def import_old_plays(spotify_connection):
                 timestamp = int(line[0])
                 played_at = datetime.fromtimestamp(timestamp/1000).strftime('%Y-%m-%dT%H:%M:%SZ')
                 play = spotify_connection.get_play_from_played_at_utc_and_track_id(played_at, line[1])
-                plays.append(play)
-        spotify_connection.db.save_instances(plays)
+                spotify_connection.db.save_instance(play)
 
 
 if __name__ == '__main__':
