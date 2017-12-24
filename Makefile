@@ -4,10 +4,10 @@ ${VENV_NAME}:
 	@echo "Creating environment."
 	virtualenv -p python3 ${VENV_NAME}; . ${VENV_NAME}/bin/activate; pip install -r requirements.txt; deactivate
 
-backup:
+init-db:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Running main.py.";
-	. ${VENV_NAME}/bin/activate; python main.py -b; deactivate
+	. ${VENV_NAME}/bin/activate; python init_db.py; deactivate
 
 run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi

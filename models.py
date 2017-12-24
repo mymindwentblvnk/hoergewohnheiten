@@ -15,7 +15,73 @@ import settings
 Base = declarative_base()
 
 
-class Track(Base):
+class Album(object):
+
+    def __init__(self, album_data):
+        self.data = album_data
+
+    @property
+    def id(self):
+        return self.data['id']
+
+    @property
+    def name(self):
+        return self.data['name']
+
+
+class Artist(object):
+
+    def __init__(self, artist_data):
+        self.data = artist_data
+
+    @property
+    def id(self):
+        return self.data['id']
+
+    @property
+    def name(self):
+        return self.data['name']
+
+
+class TrackDataAccessMixin(object):
+
+    @property
+    def name(self):
+        return self.track_data['name']
+
+    @property
+    def track_id(self):
+        return self.track_data['id']
+
+    @property
+    def spotify_url(self):
+        return None
+
+    @property
+    def tempo(self):
+        if self.audio_feature_data:
+            return self.audio_feature_data['tempo']
+
+    @property
+    def energy(self):
+        if self.audio_feature_data:
+            return self.audio_feature_data['energy']
+
+    @property
+    def valence(self):
+        if self.audio_feature_data:
+            return self.audio_feature_data['valence']
+
+    @property
+    def artists(self):
+        return None
+
+    @property
+    def album(self):
+        return None
+
+
+class Track(Base, TrackDataAccessMixin):
 
     __tablename__ = 't_track'
     track_id = Column(String, primary_key=True, index=True)
@@ -31,18 +97,18 @@ class Play(Base):
 
     __tablename__ = 't_play'
     played_at_utc_timestamp = Column(BigInteger, primary_key=True)
-    played_at_utc = Column(DateTime)
-    played_at_cet = Column(DateTime)
-    day = Column(Integer)
-    month = Column(Integer)
-    year = Column(Integer)
-    hour = Column(Integer)
-    minute = Column(Integer)
-    second = Column(Integer)
-    day_of_week = Column(Integer)  # Monday: 0, Sunday: 6
-    week_of_year = Column(Integer)
+    played_at_utc = Column(DateTime, nullable=False)
+    played_at_cet = Column(DateTime, nullable=False)
+    day = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    year = Column(Integer, nullable=False)
+    hour = Column(Integer, nullable=False)
+    minute = Column(Integer, nullable=False)
+    second = Column(Integer, nullable=False)
+    day_of_week = Column(Integer, nullable=False)  # Monday: 0, Sunday: 6
+    week_of_year = Column(Integer, nullable=False)
     track_id = Column(String, ForeignKey('t_track.track_id'), index=True)
-    user_name = Column(String)
+    user_name = Column(String, nullable=False)
 
     # Relationship
     track = relationship('Track', back_populates='plays')
@@ -74,10 +140,13 @@ class PostgreSQLConnection(object):
         try:
             self.session.add(instance)
             self.session.commit()
+            print("* Saved.")
         except IntegrityError as e:
             self.session.rollback()
+            print("* Already there.")
         except InvalidRequestError as e:
             self.session.rollback()
+            print("* Already there.")
 
     def save_instances(self, instances):
         for instance in instances:

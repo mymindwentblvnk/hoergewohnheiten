@@ -38,9 +38,7 @@ class SpotifyConnection(object):
             audio_feature_response = self.client.audio_features(track_id)[0]
             if audio_feature_response:  # Some tracks do not have audio features
                 track.audio_feature_data = audio_feature_response
-            # Save
-            self.db.save_instance(track)
-            print("> Track {} was not in database. Now is.".format(track.track_data['name']))
+            print("> Track {} was not in database.".format(track.track_data['name']))
         return track
 
     def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
@@ -89,10 +87,7 @@ class SpotifyConnection(object):
         print("* Extracting latest plays of {} from Spotify API.".format(self.user_name))
         play_tuples = self._get_play_tuples()
 
-        plays = []
         for played_at, track_id in play_tuples:
             play = self.get_play_from_played_at_utc_and_track_id(played_at, track_id)
-            plays.append(play)
-
-        print("* Saving plays to database.")
-        self.db.save_instance(plays)
+            print("* Trying to save play of track {}.".format(play.track.track_data['name']))
+            self.db.save_instance(play)
