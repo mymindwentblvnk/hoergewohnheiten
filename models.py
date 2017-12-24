@@ -1,12 +1,9 @@
-from datetime import datetime
-
-from sqlalchemy import Column, DateTime, String, BigInteger, Integer, Float, ForeignKey, func, asc
+from sqlalchemy import Column, DateTime, String, BigInteger, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.schema import Table
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import settings

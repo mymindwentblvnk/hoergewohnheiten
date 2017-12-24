@@ -1,11 +1,8 @@
-from datetime import datetime
-
 from spotipy import Spotify
 import spotipy.util
 
 from models import Play, Track, PostgreSQLConnection
 
-import settings
 import util
 
 

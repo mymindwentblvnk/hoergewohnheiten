@@ -1,11 +1,9 @@
-from datetime import datetime
 import argparse
 
 import settings
 import util
 
 from connections import SpotifyConnection
-from models import PostgreSQLConnection
 
 
 class HoergewohnheitenManager(object):

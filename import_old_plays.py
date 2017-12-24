@@ -4,12 +4,8 @@ from glob import glob
 import csv
 
 import settings
-import util
 
-from models import PostgreSQLConnection
 from connections import SpotifyConnection
-
-
 
 
 def import_old_plays(spotify_connection):
