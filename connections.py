@@ -81,7 +81,7 @@ class SpotifyConnection(object):
         return play_tuples
 
     def extract_plays(self):
-        print("* Extracting latest plays of {} from Spotify API.".format(self.user_name))
+        print("* Extracting latest plays of {}.".format(self.user_name))
         play_tuples = self._get_play_tuples()
 
         for played_at, track_id in play_tuples:

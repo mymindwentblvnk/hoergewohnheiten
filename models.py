@@ -137,7 +137,7 @@ class PostgreSQLConnection(object):
         try:
             self.session.add(play)
             self.session.commit()
-            print("* Track \"{}\" saved.".format(play.track.name))
+            print("* Track \"{}\" (played at {}) saved.".format(play.track.name, play.played_at_cet))
         except IntegrityError as e:
             self.session.rollback()
         except InvalidRequestError as e:
