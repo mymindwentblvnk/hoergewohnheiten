@@ -86,5 +86,4 @@ class SpotifyConnection(object):
 
         for played_at, track_id in play_tuples:
             play = self.get_play_from_played_at_utc_and_track_id(played_at, track_id)
-            print("* Trying to save play of track {}.".format(play.track.track_data['name']))
-            self.db.save_instance(play)
+            self.db.save_play(play)

@@ -133,49 +133,12 @@ class PostgreSQLConnection(object):
     def create_db(self):
         Base.metadata.create_all(bind=self.engine)
 
-    def save_instance(self, instance):
+    def save_play(self, play):
         try:
-            self.session.add(instance)
+            self.session.add(play)
             self.session.commit()
-            print("* Saved.")
-        except IntegrityError as e:
-            self.session.rollback()
-            print("* Already there.")
-        except InvalidRequestError as e:
-            self.session.rollback()
-            print("* Already there.")
-
-    def save_instances(self, instances):
-        for instance in instances:
-            self.save_instance(instance)
-
-
-class SQLiteConnection(object):
-
-    def __init__(self, db_path):
-        self.db_path = db_path
-        self.engine = create_engine('sqlite:///{}'.format(self.db_path))
-        self.session = sessionmaker(autoflush=False)(bind=self.engine)
-
-    def drop_db(self):
-        Base.metadata.drop_all(bind=self.engine)
-
-    def create_db(self):
-        Base.metadata.create_all(bind=self.engine)
-
-    def save_instance(self, instance):
-        try:
-            self.session.add(instance)
-            self.session.commit()
+            print("* Track \"{}\" saved.".format(play.track.name))
         except IntegrityError as e:
             self.session.rollback()
         except InvalidRequestError as e:
             self.session.rollback()
-
-    def save_instances(self, instances):
-        for instance in instances:
-            self.save_instance(instance)
-
-    @property
-    def rows_count_play(self):
-        return self.session.query(Play).count()
