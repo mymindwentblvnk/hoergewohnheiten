@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Column, DateTime, String, BigInteger, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -80,7 +82,11 @@ class TrackDataAccessMixin(object):
 
 class Track(Base, TrackDataAccessMixin):
 
+    # Meta
     __tablename__ = 't_track'
+    created_at_utc = Column(DateTime, default=datetime.utcnow)
+
+    # Payload
     track_id = Column(String, primary_key=True, index=True)
     track_data = Column(JSON, nullable=False)
     album_data = Column(JSON, nullable=False)
@@ -92,7 +98,11 @@ class Track(Base, TrackDataAccessMixin):
 
 class Play(Base):
 
+    # Meta
     __tablename__ = 't_play'
+    created_at_utc = Column(DateTime, default=datetime.utcnow)
+
+    # Payload
     played_at_utc_timestamp = Column(BigInteger, primary_key=True)
     played_at_utc = Column(DateTime, nullable=False)
     played_at_cet = Column(DateTime, nullable=False)
