@@ -1,7 +1,7 @@
 # Custom
 .cache-*
 *.swp
-settings.py
+spotify_settings.py
 *.pckl
 
 # Byte-compiled / optimized / DLL files

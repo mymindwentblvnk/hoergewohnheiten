@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 from sqlalchemy import Column, DateTime, String, BigInteger, Integer, ForeignKey
 from sqlalchemy.orm import relationship
@@ -130,11 +131,7 @@ class Play(Base):
 class PostgreSQLConnection(object):
 
     def __init__(self):
-        self.engine = create_engine('postgres://{}:{}@{}:{}/{}'.format(settings.POSTGRES_CONNECTION_INFORMATION['user'],
-                                                                       settings.POSTGRES_CONNECTION_INFORMATION['password'],
-                                                                       settings.POSTGRES_CONNECTION_INFORMATION['host'],
-                                                                       settings.POSTGRES_CONNECTION_INFORMATION['port'],
-                                                                       settings.POSTGRES_CONNECTION_INFORMATION['database']))
+        self.engine = create_engine(os.environ[settings.POSTGRES_ENVIRON_KEY])
         self.session = sessionmaker(autoflush=False)(bind=self.engine)
 
     def drop_db(self):
