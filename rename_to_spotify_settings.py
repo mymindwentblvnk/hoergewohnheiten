@@ -8,12 +8,6 @@ SPOTIFY_USERS = {
     # ...
 }
 
-POSTGRES_CONNECTION_INFORMATION = {
-    'host': '<host>',
-    'database': '<database>',
-    'port': '<port>',
-    'user': '<user>',
-    'password': '<password>',
-}
+POSTGRES_ENVIRON_KEY = ''
 
 TARGET_TIMEZONE = ''

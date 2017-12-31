@@ -5,3 +5,7 @@ SQLAlchemy==1.1.14
 python-dateutil==2.6.1
 flake8==3.5.0
 psycopg2==2.7.3.2
+Flask==0.12.2
+Flask-RESTful==0.3.6
+Flask-SQLAlchemy==2.3.2
+gunicorn==19.7.1

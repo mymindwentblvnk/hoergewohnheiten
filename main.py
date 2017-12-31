@@ -1,7 +1,7 @@
 import argparse
 from datetime import datetime
 
-import settings
+import spotify_settings
 import util
 
 from connections import SpotifyConnection
@@ -18,7 +18,7 @@ class HoergewohnheitenManager(object):
 
 def process_hoergewohnheiten(user_name):
     print("***", user_name, "***")
-    user_data = settings.SPOTIFY_USERS[user_name]
+    user_data = spotify_settings.SPOTIFY_USERS[user_name]
     mgr = HoergewohnheitenManager(user_data)
     mgr.process_hoergewohnheiten()
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     if args.user_name:
         process_hoergewohnheiten(args.user_name)
     else:
-        for user_name in settings.SPOTIFY_USERS:
+        for user_name in spotify_settings.SPOTIFY_USERS:
             process_hoergewohnheiten(user_name)
 
     print("Script finished at {}.".format(datetime.now()))
