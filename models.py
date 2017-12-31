@@ -131,7 +131,11 @@ class Play(Base):
 class PostgreSQLConnection(object):
 
     def __init__(self):
-        self.engine = create_engine(os.environ[settings.POSTGRES_ENVIRON_KEY])
+        if settings.POSTGRES_ENVIRON_KEY in os.environ:
+            self.engine = create_engine(os.environ[settings.POSTGRES_ENVIRON_KEY])
+        else:
+            import secret_settings
+            self.engine = create_engine(secret_settings.POSTGRES_CONNECTION_STRING)
         self.session = sessionmaker(autoflush=False)(bind=self.engine)
 
     def drop_db(self):
