@@ -43,7 +43,7 @@ class TrackMixin(object):
 
     @property
     def spotify_url(self):
-        return self.track_data['external_urls']['spotify'],
+        return self.track_data['external_urls']['spotify']
 
     @property
     def tempo(self):
