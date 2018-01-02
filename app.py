@@ -155,46 +155,8 @@ api = Api(app)
 
 class Stats(Resource):
 
-#     def get_plays_per_album(self, user_name, from_date, to_date):
-#         sql = """SELECT COUNT(*), t.album_data->>'id' FROM t_play p, t_track t
-# WHERE p.track_id = t.track_id
-# AND p.user_name = {}
-# AND p.played_at_cet > from_date
-# AND p.played_at_cet < to_date
-# GROUP BY t.album_data->>'id'
-# ORDER BY 1 DESC
-# LIMIT 100;"""
-#         res = db.engine.execute(sql)
-#         for row in res:
-#             inner_sql = """SELECT album_data FROM t_track
-# WHERE album_data->>'id' = '4E7RXXUaKpkquRTcVUvdAg'
-# LIMIT 1;"""
-
     def get(self, user_name, from_date=None, to_date=None):
         pass
-        #
-        # # Plays per track
-        # plays_per_track = []
-        # counts_per_track_id = db.session.\
-        #     query(db.func.count(Play.track_id).label('cnt'), Play.track_id).\
-        #     filter_by(user_name=user_name).\
-        #     group_by(Play.track_id).\
-        #     order_by(db.desc('cnt')).\
-        #     limit(100).\
-        #     all()
-        # for count, track_id in counts_per_track_id:
-        #     track = Track.query.get(track_id)
-        #     plays_per_track.append({'count': count, 'track': track.to_dict(), })
-        #
-        # response = jsonify({
-        #     'from_date': from_date,
-        #     'to_date': to_date,
-        #     'stats': {
-        #         'plays_per_track': plays_per_track,
-        #     },
-        # })
-        # response.headers.add('Access-Control-Allow-Origin', '*')
-        # return response
 
 
 class Plays(Resource):
@@ -220,9 +182,9 @@ class Plays(Resource):
 
 api.add_resource(Plays, '/plays/<string:user_name>',
                         '/plays/<string:user_name>/<int:offset>')
-# api.add_resource(Stats, '/stats/<string:user_name>',
-#                         '/stats/<string:user_name>/<string:from_date>',
-#                         '/stats/<string:user_name>/<string:from_date>/<string:to_date>')
+api.add_resource(Stats, '/stats/<string:user_name>',
+                        '/stats/<string:user_name>/<string:from_date>',
+                        '/stats/<string:user_name>/<string:from_date>/<string:to_date>')
 
 
 if __name__ == '__main__':
