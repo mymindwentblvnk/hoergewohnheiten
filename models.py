@@ -3,6 +3,7 @@ import os
 
 from sqlalchemy import Column, DateTime, String, BigInteger, Integer, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.schema import Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import create_engine
@@ -15,73 +16,45 @@ import settings
 Base = declarative_base()
 
 
-class Album(object):
-
-    def __init__(self, album_data):
-        self.data = album_data
-
-    @property
-    def id(self):
-        return self.data['id']
-
-    @property
-    def name(self):
-        return self.data['name']
+track_artists = Table('t_track_artists',
+                      Base.metadata,
+                      Column('track_id', String, ForeignKey('t_track.track_id')),
+                      Column('artist_id', String, ForeignKey('t_artist.artist_id')))
 
 
-class Artist(object):
-
-    def __init__(self, artist_data):
-        self.data = artist_data
-
-    @property
-    def id(self):
-        return self.data['id']
-
-    @property
-    def name(self):
-        return self.data['name']
+album_artists = Table('t_album_artists',
+                      Base.metadata,
+                      Column('album_id', String, ForeignKey('t_album.album_id')),
+                      Column('artist_id', String, ForeignKey('t_artist.artist_id')))
 
 
-class TrackDataAccessMixin(object):
+class Artist(Base):
 
-    @property
-    def name(self):
-        return self.track_data['name']
+    # Meta
+    __tablename__ = 't_artist'
+    created_at_utc = Column(DateTime, default=datetime.utcnow)
 
-    @property
-    def track_id(self):
-        return self.track_data['id']
-
-    @property
-    def spotify_url(self):
-        return None
-
-    @property
-    def tempo(self):
-        if self.audio_feature_data:
-            return self.audio_feature_data['tempo']
-
-    @property
-    def energy(self):
-        if self.audio_feature_data:
-            return self.audio_feature_data['energy']
-
-    @property
-    def valence(self):
-        if self.audio_feature_data:
-            return self.audio_feature_data['valence']
-
-    @property
-    def artists(self):
-        return None
-
-    @property
-    def album(self):
-        return None
+    # Payload
+    artist_id = Column(String, primary_key=True)
+    artist_data = Column(JSON, nullable=False)
 
 
-class Track(Base, TrackDataAccessMixin):
+class Album(Base):
+
+    # Meta
+    __tablename__ = 't_album'
+    created_at_utc = Column(DateTime, default=datetime.utcnow)
+
+    # Payload
+    album_id = Column(String, primary_key=True)
+    album_data = Column(JSON, nullable=False)
+
+    # Relationship
+    artists = relationship('Artist', secondary=album_artists)
+    tracks = relationship('Track')
+
+
+class Track(Base):
 
     # Meta
     __tablename__ = 't_track'
@@ -89,12 +62,14 @@ class Track(Base, TrackDataAccessMixin):
 
     # Payload
     track_id = Column(String, primary_key=True, index=True)
+    album_id = Column(String, ForeignKey('t_album.album_id'), index=True)
     track_data = Column(JSON, nullable=False)
-    album_data = Column(JSON, nullable=False)
     audio_feature_data = Column(JSON)
 
     # Relationships
     plays = relationship('Play', back_populates='track')
+    album = relationship('Album', back_populates='tracks')
+    artists = relationship('Artist', secondary=track_artists)
 
 
 class Play(Base):
@@ -121,12 +96,6 @@ class Play(Base):
     # Relationship
     track = relationship('Track', back_populates='plays')
 
-    @property
-    def csv_string(self):
-        return "{},{},{}".format(self.played_at_utc_timestamp,
-                                 self.track_id,
-                                 self.user_name)
-
 
 class PostgreSQLConnection(object):
 
@@ -144,11 +113,15 @@ class PostgreSQLConnection(object):
     def create_db(self):
         Base.metadata.create_all(bind=self.engine)
 
+    def save_instance(self, instance):
+        self.session.add(instance)
+        self.session.commit()
+
     def save_play(self, play):
         try:
             self.session.add(play)
             self.session.commit()
-            print("* Track \"{}\" (played at {}) saved.".format(play.track.name, play.played_at_cet))
+            print("* Track \"{}\" (played at {}) saved.".format(play.track.track_data['name'], play.played_at_cet))
         except IntegrityError as e:
             self.session.rollback()
         except InvalidRequestError as e:
