@@ -33,8 +33,8 @@ class TrackMixin(object):
                 'valence': self.valence,
                 'energy': self.energy,
             },
-            'artists': self.track_artists,
-            'album': self.album,
+            'artists': None,
+            'album': None,
         }
 
     @property
@@ -60,26 +60,41 @@ class TrackMixin(object):
         if self.audio_feature_data:
             return self.audio_feature_data['valence']
 
-    @property
-    def track_artists(self):
-        result = []
-        for artist in self.track_data['artists']:
-            result.append(
-                {
-                    'id': artist['id'],
-                    'name': artist['name'],
-                    'spotify_url': artist['external_urls']['spotify'],
-                }
-            )
-        return result
 
-    @property
-    def album(self):
-        return {
-            'name': self.album_data['name'],
-            'id': self.album_data['id'],
-            'spotify_url': self.album_data['external_urls']['spotify'],
-        }
+track_artists = db.Table('t_track_artists',
+                         db.Column('track_id', db.String, db.ForeignKey('t_track.track_id')),
+                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
+
+
+album_artists = db.Table('t_album_artists',
+                         db.Column('album_id', db.String, db.ForeignKey('t_album.album_id')),
+                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
+
+
+class Artist(db.Model):
+
+    # Meta
+    __tablename__ = 't_artist'
+    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Payload
+    artist_id = db.Column(db.String, primary_key=True, index=True)
+    artist_data = db.Column(db.JSON, nullable=False)
+
+
+class Album(db.Model):
+
+    # Meta
+    __tablename__ = 't_album'
+    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Payload
+    album_id = db.Column(db.String, primary_key=True, index=True)
+    album_data = db.Column(db.JSON, nullable=False)
+
+    # Relationships
+    artists = db.relationship('Artist', secondary=album_artists)
+    tracks = db.relationship('Track')
 
 
 class Track(db.Model, TrackMixin):
@@ -91,11 +106,13 @@ class Track(db.Model, TrackMixin):
     # Payload
     track_id = db.Column(db.String, primary_key=True, index=True)
     track_data = db.Column(db.JSON, nullable=False)
-    album_data = db.Column(db.JSON, nullable=False)
+    album_id = db.Column(db.String, db.ForeignKey('t_album.album_id'), index=True)
     audio_feature_data = db.Column(db.JSON)
 
     # Relationships
     plays = db.relationship('Play', back_populates='track')
+    album = db.relationship('Album', back_populates='tracks')
+    artists = db.relationship('Artist', secondary=track_artists)
 
 
 
@@ -103,8 +120,8 @@ class PlayMixin(object):
 
     def to_dict(self):
         return {
-            'played_at_cet': self.played_at_cet,
             'track': self.track.to_dict(),
+            'played_at_cet': self.played_at_cet,
         }
 
 
@@ -138,13 +155,8 @@ api = Api(app)
 
 class Stats(Resource):
 
-    def get(self, user_name, from_date, to_date):
-        response = jsonify({
-            'from_date': from_date,
-            'to_date': to_date,
-        })
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        return response
+    def get(self, user_name, from_date=None, to_date=None):
+        pass
 
 
 class Plays(Resource):

@@ -1,7 +1,7 @@
 from spotipy import Spotify
 import spotipy.util
 
-from models import Play, Track, PostgreSQLConnection
+from models import Play, Track, Album, Artist, PostgreSQLConnection
 
 import util
 
@@ -21,16 +21,48 @@ class SpotifyConnection(object):
     def init_db(self):
         return PostgreSQLConnection()
 
+    def get_artist(self, artist_id):
+        artist = self.db.session.query(Artist).get(artist_id)
+        if artist:
+            return artist
+        else:
+            artist_response = self.client.artist(artist_id)
+            artist = Artist()
+            artist.artist_id = artist_id
+            artist.artist_data = artist_response
+            self.db.save_instance(artist)
+            print("> Artist {} was not in database.".format(artist.artist_data['name']))
+            return self.db.session.query(Artist).get(artist_id)
+
+    def get_album(self, album_id):
+        album = self.db.session.query(Album).get(album_id)
+        if album:
+            return album
+        else:
+            album_response = self.client.album(album_id)
+            album = Album()
+            album.album_data = album_response
+            album.album_id = album_response['id']
+            # Artists
+            for album_artist_response in album_response['artists']:
+                album.artists.append(self.get_artist(album_artist_response['id']))
+            self.db.save_instance(album)
+            print("> Album {} was not in database.".format(album.album_data['name']))
+            return self.db.session.query(Album).get(album_id)
+
     def get_track(self, track_id):
         track = self.db.session.query(Track).get(track_id)
         if not track:
             response = self.client.track(track_id)
-            album_response = self.client.album(response['album']['id'])
 
             track = Track()
             track.track_id = track_id
             track.track_data = response
-            track.album_data = album_response
+            # Album
+            track.album = self.get_album(response['album']['id'])
+            # Artists
+            for artist_response in response['artists']:
+                track.artists.append(self.get_artist(artist_response['id']))
             # Audio feature
             audio_feature_response = self.client.audio_features(track_id)[0]
             if audio_feature_response:  # Some tracks do not have audio features
