@@ -96,6 +96,12 @@ class Album(db.Model):
     artists = db.relationship('Artist', secondary=album_artists)
     tracks = db.relationship('Track')
 
+    def to_dict(self):
+        return {
+            'id': self.album_data['id'],
+            'name': self.album_data['name'],
+        }
+
 
 class Track(db.Model, TrackMixin):
 
@@ -154,13 +160,71 @@ api = Api(app)
 
 class Stats(Resource):
 
+    N = 100
+
+    def get_plays_per_album(self, user_name, from_date, to_date):
+        plays_per_album = []
+        counts_per_album_id = db.session.\
+            query(db.func.count(Album.album_id).label('cnt'), Album.album_id).\
+            select_from(Play).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            join(Play.track).\
+            join(Track.album).\
+            group_by(Album.album_id).\
+            order_by(db.desc('cnt')).\
+            limit(self.N).\
+            all()
+
+        for count, album_id in counts_per_album_id:
+            album = Album.query.get(album_id)
+            plays_per_album.append({'count': count, 'album': album.to_dict(), })
+
+        return plays_per_album
+
+    def get_plays_per_track(self, user_name, from_date, to_date):
+        plays_per_track = []
+        counts_per_track_id = db.session.\
+            query(db.func.count(Play.track_id).label('cnt'), Play.track_id).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            group_by(Play.track_id).\
+            order_by(db.desc('cnt')).\
+            limit(self.N).\
+            all()
+
+        for count, track_id in counts_per_track_id:
+            track = Track.query.get(track_id)
+            plays_per_track.append({'count': count, 'track': track.to_dict(), })
+
+        return plays_per_track
+
     def get(self, user_name, from_date=None, to_date=None):
-        pass
+        if not from_date:
+            from_date = datetime(1970,1,1)
+        if not to_date:
+            to_date = datetime.now()
+
+        response = jsonify({
+            'meta': {
+                'from_date': from_date,
+                'to_date': to_date,
+                'user_name': user_name,
+            },
+            'stats': {
+                'plays_per_track': self.get_plays_per_track(user_name, from_date, to_date),
+                'plays_per_album': self.get_plays_per_album(user_name, from_date, to_date),
+            },
+        })
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
 
 
 class Plays(Resource):
 
-    def get(self, user_name, offset=None):
+    def get(self, user_name):
         latest_plays = Play.query.\
                             filter_by(user_name=user_name).\
                             order_by(Play.played_at_cet.desc()).\
@@ -172,15 +236,16 @@ class Plays(Resource):
             result.append(play.to_dict())
 
         response = jsonify({
-            'offset': offset,
+            'meta': {
+                'user_name': user_name,
+            },
             'latest_plays': result,
         })
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
 
 
-api.add_resource(Plays, '/plays/<string:user_name>',
-                        '/plays/<string:user_name>/<int:offset>')
+api.add_resource(Plays, '/plays/<string:user_name>')
 api.add_resource(Stats, '/stats/<string:user_name>',
                         '/stats/<string:user_name>/<string:from_date>',
                         '/stats/<string:user_name>/<string:from_date>/<string:to_date>')
