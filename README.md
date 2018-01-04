@@ -4,9 +4,9 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
 
 ## Entity–relationship model
 ```
-            ------------------------------------------                                                                                                    
+             ------------------------------------------                                                                                                    
             | t_play                                   |                                                                                                  
-            ------------------------------------------                                                                                                    
+             ------------------------------------------                                                                                                    
             | created_at_utc: DateTime                 |                                                                                                  
             | played_at_utc_timestamp: BigInteger [PK] |                                                                                                  
             | played_at_utc: DateTime                  |                                                                                                  
@@ -21,7 +21,7 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
             | week_of_year: Integer                    |                                                                                                  
             | track_id: String                         |                                                                                                  
             | user_name: String                        |                                                                                                  
-            ------------------------------------------                                                                                                    
+             ------------------------------------------                                                                                                    
                   |                                                                                                                                       
                   |                                                                                                                                       
                   | n..1                                                                                                                                  
@@ -52,11 +52,11 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
                        | n..1              | n..1                                                                                                         
                        |                   |                                                                                                              
                        |                   |                                                                                                              
-                    --------------------------                                                                                                            
+                     --------------------------                                                                                                            
                     | t_artist                 |                                                                                                          
-                    --------------------------                                                                                                            
+                     --------------------------                                                                                                            
                     | created_at_utc: DateTime |                                                                                                          
                     | artist_id: String [PK]   |                                                                                                          
                     | artist_data: JSON        |                                                                                                          
-                    --------------------------   
+                     --------------------------   
  ```
