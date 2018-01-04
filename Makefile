@@ -11,8 +11,8 @@ create-database:
 
 run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
-	@echo "Running main.py.";
-	. ${VENV_NAME}/bin/activate; python main.py ${ARGS}; deactivate
+	@echo "Extracting spotify plays.";
+	. ${VENV_NAME}/bin/activate; python extract_spotify_plays.py ${ARGS}; deactivate
 
 flake8:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
