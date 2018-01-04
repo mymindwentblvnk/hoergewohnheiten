@@ -4,10 +4,10 @@ ${VENV_NAME}:
 	@echo "Creating environment."
 	virtualenv -p python3 ${VENV_NAME}; . ${VENV_NAME}/bin/activate; pip install -r requirements.txt; deactivate
 
-init-db:
+create-database:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
-	@echo "Running main.py.";
-	. ${VENV_NAME}/bin/activate; python init_db.py; deactivate
+	@echo "Create database.";
+	. ${VENV_NAME}/bin/activate; python -c "from models import PostgreSQLConnection; PostgreSQLConnection().create_db()"; deactivate
 
 run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
