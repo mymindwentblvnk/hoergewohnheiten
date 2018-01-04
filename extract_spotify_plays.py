@@ -8,7 +8,6 @@ import spotipy.util
 from models import Play, Track, Album, Artist, PostgreSQLConnection
 
 import secret_settings
-import util
 
 import settings
 
@@ -34,6 +33,8 @@ def convert_datetime_from_timezone_to_timezone(datetime_to_convert,
     datetime_to_convert = datetime_to_convert.replace(tzinfo=from_tz)
     converted_datetime = datetime_to_convert.astimezone(to_tz)
     return converted_datetime
+
+
 class SpotifyConnection(object):
 
     def __init__(self, user_data):
@@ -175,8 +176,7 @@ if __name__ == '__main__':
 |_| | \_\_/ |_|__ |_| \ \_\_/ |_|__  \_\/\/ \_\_/ |_| | |_| \| |_| | |_|__ |_|  |_|  |_|__ |_| \|
 ''')
 
-
-    print("Script started at {}.".format(datetime.now()))
+    print("Started at {}.".format(datetime.now()))
 
     # Argparse
     parser = argparse.ArgumentParser(description='Hoergewohnheiten')
@@ -189,4 +189,4 @@ if __name__ == '__main__':
         for user_name in secret_settings.SPOTIFY_USERS:
             process_hoergewohnheiten(user_name)
 
-    print("Script finished at {}.".format(datetime.now()))
+    print("Finished at {}.".format(datetime.now()))
