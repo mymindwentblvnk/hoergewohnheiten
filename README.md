@@ -42,9 +42,9 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
                        |                   |                                                                                                              
                        |                   |                                                                                                              
           -----------------          -----------------                                                                                                    
-         | t_album_artists |        | t_track_artists |                                                                                                   
+         | t_track_artists |        | t_album_artists |                                                                                                   
           -----------------          -----------------                                                                                                    
-         | album_id        |        | track_id        |                                                                                                   
+         | track_id        |        | album_id        |                                                                                                   
          | artist_id       |        | artist_id       |                                                                                                   
           -----------------          -----------------                                                                                                    
                        |                   |                                                                                                              
