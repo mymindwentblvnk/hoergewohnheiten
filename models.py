@@ -114,8 +114,13 @@ class PostgreSQLConnection(object):
         Base.metadata.create_all(bind=self.engine)
 
     def save_instance(self, instance):
-        self.session.add(instance)
-        self.session.commit()
+        try:
+            self.session.add(instance)
+            self.session.commit()
+        except IntegrityError as e:
+            self.session.rollback()
+        except InvalidRequestError as e:
+            self.session.rollback()
 
     def save_play(self, play):
         try:

@@ -52,7 +52,9 @@ class SpotifyConnection(object):
 
     def get_track(self, track_id):
         track = self.db.session.query(Track).get(track_id)
-        if not track:
+        if track:
+            return track
+        else:
             response = self.client.track(track_id)
 
             track = Track()
@@ -68,7 +70,8 @@ class SpotifyConnection(object):
             if audio_feature_response:  # Some tracks do not have audio features
                 track.audio_feature_data = audio_feature_response
             print("> Track {} was not in database.".format(track.track_data['name']))
-        return track
+            self.db.save_instance(track)
+            return self.db.session.query(Track).get(track_id)
 
     def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
         played_at_utc = util.convert_played_at_from_response_to_datetime(played_at_utc)
