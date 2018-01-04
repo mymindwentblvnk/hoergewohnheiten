@@ -4,69 +4,59 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
 
 ## Entity–relationship model
 ```
- ------------------------------------------
-| t_play                                   |
- ------------------------------------------
-| created_at_utc: DateTime                 |
-| played_at_utc_timestamp: BigInteger [PK] |
-| played_at_utc: DateTime                  |
-| played_at_cet: DateTime                  |
-| day: Integer                             |
-| month: Integer                           |
-| year: Integer                            |
-| hour: Integer                            |
-| minute: Integer                          |
-| second: Integer                          |
-| day_of_week: Integer                     |
-| week_of_year: Integer                    |
-| track_id: String                         |
-| user_name: String                        |
- ------------------------------------------
-
- --------------------------
-| t_track                  |
- --------------------------
-| created_at_utc: DateTime |
-| track_id: String [PK]    |
-| album_id: String         |
-| track_data: JSON         |
-| audio_feature_data: JSON |
- --------------------------
-
- --------------------------
-| t_album                  |
- --------------------------
-| created_at_utc: DateTime |
-| album_id: String [PK]    |
-| album_data: JSON         |
- --------------------------
-
- --------------------------
-| t_artist                 |
- --------------------------
-| created_at_utc: DateTime |
-| artist_id: String [PK]   |
-| artist_data: JSON        |
- --------------------------
-
- -----------------
-| t_album_artists |
- -----------------
-| album_id        |
-| artist_id       |
- -----------------
-
- -----------------
-| t_track_artists |
- -----------------
-| track_id        |
-| artist_id       |
- -----------------
+            ------------------------------------------                                                                                                    
+            | t_play                                   |                                                                                                  
+            ------------------------------------------                                                                                                    
+            | created_at_utc: DateTime                 |                                                                                                  
+            | played_at_utc_timestamp: BigInteger [PK] |                                                                                                  
+            | played_at_utc: DateTime                  |                                                                                                  
+            | played_at_cet: DateTime                  |                                                                                                  
+            | day: Integer                             |                                                                                                  
+            | month: Integer                           |                                                                                                  
+            | year: Integer                            |                                                                                                  
+            | hour: Integer                            |                                                                                                  
+            | minute: Integer                          |                                                                                                  
+            | second: Integer                          |                                                                                                  
+            | day_of_week: Integer                     |                                                                                                  
+            | week_of_year: Integer                    |                                                                                                  
+            | track_id: String                         |                                                                                                  
+            | user_name: String                        |                                                                                                  
+            ------------------------------------------                                                                                                    
+                  |                                                                                                                                       
+                  |                                                                                                                                       
+                  | n..1                                                                                                                                  
+                  |                                                                                                                                       
+                  |                                                                                                                                       
+ --------------------------           --------------------------                                                                                          
+| t_track                  |         | t_album                  |                                                                                         
+ --------------------------           --------------------------                                                                                          
+| created_at_utc: DateTime |   n..1  | created_at_utc: DateTime |                                                                                         
+| track_id: String [PK]    |---------| album_id: String [PK]    |                                                                                         
+| album_id: String         |         | album_data: JSON         |                                                                                         
+| track_data: JSON         |          --------------------------                                                                                          
+| audio_feature_data: JSON |               |                                                                                                              
+ --------------------------                |                                                                                                              
+                       |                   |                                                                                                              
+                       |                   |                                                                                                              
+                       | 1..n              | 1..n                                                                                                         
+                       |                   |                                                                                                              
+                       |                   |                                                                                                              
+          -----------------          -----------------                                                                                                    
+         | t_album_artists |        | t_track_artists |                                                                                                   
+          -----------------          -----------------                                                                                                    
+         | album_id        |        | track_id        |                                                                                                   
+         | artist_id       |        | artist_id       |                                                                                                   
+          -----------------          -----------------                                                                                                    
+                       |                   |                                                                                                              
+                       |                   |                                                                                                              
+                       | n..1              | n..1                                                                                                         
+                       |                   |                                                                                                              
+                       |                   |                                                                                                              
+                    --------------------------                                                                                                            
+                    | t_artist                 |                                                                                                          
+                    --------------------------                                                                                                            
+                    | created_at_utc: DateTime |                                                                                                          
+                    | artist_id: String [PK]   |                                                                                                          
+                    | artist_data: JSON        |                                                                                                          
+                    --------------------------   
  ```
-
-Relationships:
-
-* `t_play --- Many-To-One --- t_track`
-* `t_track --- Many-To-One --- t_album`
-* `t_track --- One-To-Many --- t_track_artists --- Many-To-One --- t_artist`
-* `t_album --- One-To-Many --- t_album_artists --- Many-To-One --- t_artist`
