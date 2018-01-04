@@ -17,4 +17,4 @@ run:
 flake8:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Checking for PEP 8.";
-	. ${VENV_NAME}/bin/activate; flake8 . --exclude ${VENV_NAME}; deactivate
+	. ${VENV_NAME}/bin/activate; flake8 . --config=./flake8.config; deactivate

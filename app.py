@@ -115,7 +115,6 @@ class Track(db.Model, TrackMixin):
     artists = db.relationship('Artist', secondary=track_artists)
 
 
-
 class PlayMixin(object):
 
     def to_dict(self):

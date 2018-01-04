@@ -126,6 +126,8 @@ class SpotifyConnection(object):
         for played_at, track_id in play_tuples:
             play = self.get_play_from_played_at_utc_and_track_id(played_at, track_id)
             self.db.save_play(play)
+
+
 class HoergewohnheitenManager(object):
 
     def __init__(self, spotify_user_data):
