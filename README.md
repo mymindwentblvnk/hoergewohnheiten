@@ -2,7 +2,7 @@
 
 This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database.
 
-## What The Data Looks Like
+## Entity–relationship model
 ```
  ------------------------------------------
 | t_play                                   |
