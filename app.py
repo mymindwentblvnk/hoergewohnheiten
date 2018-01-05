@@ -37,8 +37,19 @@ class ArtistMixin(object):
         return {
             'id': self.artist_id,
             'name': self.artist_name,
-            'spotify_url': self.spotify_url
+            'spotify_url': self.spotify_url,
+            'image_url': self.image_url,
         }
+
+    @property
+    def image_url(self):
+        last_width = 0
+        url = None
+        for image in self.artist_data['images']:
+            if last_width < image['width']:
+                last_width = image['width']
+                url = image['url']
+        return url
 
     @property
     def artist_name(self):
@@ -68,7 +79,18 @@ class AlbumMixin(object):
             'name': self.album_name,
             'spotify_url': self.spotify_url,
             'artists': [a.to_dict() for a in self.artists],
+            'image_url': self.image_url,
         }
+
+    @property
+    def image_url(self):
+        last_width = 0
+        url = None
+        for image in self.album_data['images']:
+            if last_width < image['width']:
+                last_width = image['width']
+                url = image['url']
+        return url
 
     @property
     def spotify_url(self):
@@ -276,8 +298,7 @@ class Stats(Resource):
     def _arg_date_to_datetime(self, from_date, to_date):
         f = datetime.strptime(from_date, '%Y-%M-%d') if from_date else datetime(1970,1,1)
         t = datetime.strptime(to_date, '%Y-%M-%d') if to_date else datetime.now()
-        if f == t:
-            t = t + timedelta(days=1)
+        t = t + timedelta(days=1)  # To receive the whole day
         return f, t
 
     def get(self, user_name, from_date=None, to_date=None):
