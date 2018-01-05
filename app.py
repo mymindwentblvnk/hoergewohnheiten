@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, jsonify
 from flask_restful import Resource, Api
@@ -21,6 +21,79 @@ else:
 db = SQLAlchemy(app)
 
 
+track_artists = db.Table('t_track_artists',
+                         db.Column('track_id', db.String, db.ForeignKey('t_track.track_id')),
+                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
+
+
+album_artists = db.Table('t_album_artists',
+                         db.Column('album_id', db.String, db.ForeignKey('t_album.album_id')),
+                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
+
+
+class ArtistMixin(object):
+
+    def to_dict(self):
+        return {
+            'id': self.artist_id,
+            'name': self.artist_name,
+            'spotify_url': self.spotify_url
+        }
+
+    @property
+    def artist_name(self):
+        return self.artist_data['name']
+
+    @property
+    def spotify_url(self):
+        return self.artist_data['external_urls']['spotify']
+
+
+class Artist(db.Model, ArtistMixin):
+
+    # Meta
+    __tablename__ = 't_artist'
+    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Payload
+    artist_id = db.Column(db.String, primary_key=True, index=True)
+    artist_data = db.Column(db.JSON, nullable=False)
+
+
+class AlbumMixin(object):
+
+    def to_dict(self):
+        return {
+            'id': self.album_id,
+            'name': self.album_name,
+            'spotify_url': self.spotify_url,
+            'artists': [a.to_dict() for a in self.artists],
+        }
+
+    @property
+    def spotify_url(self):
+        return self.album_data['external_urls']['spotify']
+
+    @property
+    def album_name(self):
+        return self.album_data['name']
+
+
+class Album(db.Model, AlbumMixin):
+
+    # Meta
+    __tablename__ = 't_album'
+    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Payload
+    album_id = db.Column(db.String, primary_key=True, index=True)
+    album_data = db.Column(db.JSON, nullable=False)
+
+    # Relationships
+    artists = db.relationship('Artist', secondary=album_artists)
+    tracks = db.relationship('Track')
+
+
 class TrackMixin(object):
 
     def to_dict(self):
@@ -33,8 +106,8 @@ class TrackMixin(object):
                 'valence': self.valence,
                 'energy': self.energy,
             },
-            'artists': None,
-            'album': None,
+            'artists': [a.to_dict() for a in self.artists],
+            'album': self.album.to_dict(),
         }
 
     @property
@@ -59,48 +132,6 @@ class TrackMixin(object):
     def valence(self):
         if self.audio_feature_data:
             return self.audio_feature_data['valence']
-
-
-track_artists = db.Table('t_track_artists',
-                         db.Column('track_id', db.String, db.ForeignKey('t_track.track_id')),
-                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
-
-
-album_artists = db.Table('t_album_artists',
-                         db.Column('album_id', db.String, db.ForeignKey('t_album.album_id')),
-                         db.Column('artist_id', db.String, db.ForeignKey('t_artist.artist_id')))
-
-
-class Artist(db.Model):
-
-    # Meta
-    __tablename__ = 't_artist'
-    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Payload
-    artist_id = db.Column(db.String, primary_key=True, index=True)
-    artist_data = db.Column(db.JSON, nullable=False)
-
-
-class Album(db.Model):
-
-    # Meta
-    __tablename__ = 't_album'
-    created_at_utc = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Payload
-    album_id = db.Column(db.String, primary_key=True, index=True)
-    album_data = db.Column(db.JSON, nullable=False)
-
-    # Relationships
-    artists = db.relationship('Artist', secondary=album_artists)
-    tracks = db.relationship('Track')
-
-    def to_dict(self):
-        return {
-            'id': self.album_data['id'],
-            'name': self.album_data['name'],
-        }
 
 
 class Track(db.Model, TrackMixin):
@@ -185,7 +216,7 @@ class Stats(Resource):
 
     def get_plays_per_track(self, user_name, from_date, to_date):
         plays_per_track = []
-        counts_per_track_id = db.session.\
+        counts = db.session.\
             query(db.func.count(Play.track_id).label('cnt'), Play.track_id).\
             filter_by(user_name=user_name).\
             filter(Play.played_at_cet >= from_date).\
@@ -195,17 +226,62 @@ class Stats(Resource):
             limit(self.N).\
             all()
 
-        for count, track_id in counts_per_track_id:
+        for count, track_id in counts:
             track = Track.query.get(track_id)
             plays_per_track.append({'count': count, 'track': track.to_dict(), })
 
         return plays_per_track
 
+    def get_total_plays(self, user_name, from_date, to_date):
+        return Play.query.\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            count()
+
+    def get_plays_per_day_of_week(self, user_name, from_date, to_date):
+        plays_per_day_of_week = []
+        counts = db.session.\
+            query(db.func.count(Play.day_of_week).label('cnt'), Play.day_of_week).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            group_by(Play.day_of_week).\
+            order_by(db.asc(Play.day_of_week)).\
+            limit(self.N).\
+            all()
+
+        for count, day_of_week in counts:
+            plays_per_day_of_week.append({day_of_week: count, })
+
+        return plays_per_day_of_week
+
+    def get_plays_per_hour_of_day(self, user_name, from_date, to_date):
+        plays_per_hour_of_day = []
+        counts = db.session.\
+            query(db.func.count(Play.hour).label('cnt'), Play.hour).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            group_by(Play.hour).\
+            order_by(db.asc(Play.hour)).\
+            limit(self.N).\
+            all()
+
+        for count, hour in counts:
+            plays_per_hour_of_day.append({hour: count, })
+
+        return plays_per_hour_of_day
+
+    def _arg_date_to_datetime(self, from_date, to_date):
+        f = datetime.strptime(from_date, '%Y-%M-%d') if from_date else datetime(1970,1,1)
+        t = datetime.strptime(to_date, '%Y-%M-%d') if to_date else datetime.now()
+        if f == t:
+            t = t + timedelta(days=1)
+        return f, t
+
     def get(self, user_name, from_date=None, to_date=None):
-        if not from_date:
-            from_date = datetime(1970,1,1)
-        if not to_date:
-            to_date = datetime.now()
+        from_date, to_date = self._arg_date_to_datetime(from_date, to_date)
 
         response = jsonify({
             'meta': {
@@ -213,9 +289,12 @@ class Stats(Resource):
                 'to_date': to_date,
                 'user_name': user_name,
             },
-            'stats': {
-                'plays_per_track': self.get_plays_per_track(user_name, from_date, to_date),
-                'plays_per_album': self.get_plays_per_album(user_name, from_date, to_date),
+            'plays': {
+                'per_track': self.get_plays_per_track(user_name, from_date, to_date),
+                'per_album': self.get_plays_per_album(user_name, from_date, to_date),
+                'total': self.get_total_plays(user_name, from_date, to_date),
+                'per_day_of_week': self.get_plays_per_day_of_week(user_name, from_date, to_date),
+                'per_hour_of_day': self.get_plays_per_hour_of_day(user_name, from_date, to_date),
             },
         })
         response.headers.add('Access-Control-Allow-Origin', '*')
