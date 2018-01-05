@@ -9,6 +9,11 @@ create-database:
 	@echo "Create database.";
 	. ${VENV_NAME}/bin/activate; python -c "from models import PostgreSQLConnection; PostgreSQLConnection().create_db()"; deactivate
 
+run-server:
+	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
+	@echo "Starting server.";
+	. ${VENV_NAME}/bin/activate; python app.py; deactivate
+
 run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Extracting spotify plays.";

@@ -195,7 +195,7 @@ class Stats(Resource):
 
     def get_plays_per_album(self, user_name, from_date, to_date):
         plays_per_album = []
-        counts_per_album_id = db.session.\
+        counts = db.session.\
             query(db.func.count(Album.album_id).label('cnt'), Album.album_id).\
             select_from(Play).\
             filter_by(user_name=user_name).\
@@ -208,7 +208,7 @@ class Stats(Resource):
             limit(self.N).\
             all()
 
-        for count, album_id in counts_per_album_id:
+        for count, album_id in counts:
             album = Album.query.get(album_id)
             plays_per_album.append({'count': count, 'album': album.to_dict(), })
 
