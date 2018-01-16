@@ -1,8 +1,12 @@
 # Hoergewohnheiten
 
-This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database. With `app.py` there is a Flask application serving stats about your listing behaviour via a REST API.
+The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database. With `app.py` there is a Flask application serving stats about your listing behaviour via a REST API.
 
-## Control flow
+## Flask API Endpoints
+
+tbd.
+
+## Control Flow
 ```
  +--------------------------------------+
  |                                      |
@@ -19,14 +23,14 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
  | |                                  | |   |                       |
  | | [Batch] extract_spotify_plays.py +---->+ [Database] PostgreSQL |
  | |                                  | |   |                       |
- | +----------------------------------+ |   +----+------------------+
- |                                      |        |
- | +----------------------------------+ |        |
- | |                                  | |        |
- | | [REST API] app.py                +<---------+
- | | [Flask]                          | |
- | |                                  | |
- | +-------------------+--------------+ |
+ | +----------------------------------+ |   |                       |
+ |                                      |   |                       |
+ | +----------------------------------+ |   |                       |
+ | |                                  | |   |                       |
+ | | [REST API] app.py                +<----+                       |
+ | | [Flask]                          | |   |                       |
+ | |                                  | |   |                       |
+ | +-------------------+--------------+ |   +-----------------------+
  |                     |                |
  +---------------------|----------------+
                        |
@@ -39,7 +43,7 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
  +--------------------------------------+
 ```
 
-## Entity–relationship model
+## Entity–Relationship Model
 ```
             +------------------------------------------+
             | t_play                                   |
