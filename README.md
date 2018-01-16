@@ -2,6 +2,46 @@
 
 This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database.
 
+## Control flow
+```
++----------------------------------------+
+|                                        |
+|  Spotify Web API                       |
+|                                        |
+|  v1/me/player/recently-played          |
+|                                        |
++----------------------+-----------------+
+                       |
+                       |
+ +--------------------------------------+
+ |                     |                |
+ | Hoergewohnheiten    |                |
+ | ----------------    |                |
+ |                     v                |
+ | +-------------------+--------------+ |    +-----------------------+
+ | |                                  | |    |                       |
+ | | [Batch] extract_spotify_plays.py +----->+ [Database] PostgreSQL |
+ | |                                  | |    |                       |
+ | +----------------------------------+ |    +----+------------------+
+ |                                      |         |
+ |                                      |         |
+ | +----------------------------------+ |         |
+ | |                                  | |         |
+ | | [REST API, Flask] app.py         +<----------+
+ | |                                  | |
+ | +-------------------+--------------+ |
+ |                     |                |
+ +--------------------------------------+
+                       |
+                       |
+                       |
+ +---------------------+----------------+
+ |                                      |
+ | [App] JSON Consuming Application     |
+ |                                      |
+ +--------------------------------------+
+```
+
 ## Entity–relationship model
 ```
              ------------------------------------------                                                                                                    
