@@ -31,10 +31,10 @@ This Python script uses the Spotify Web API (with the help of [plamere's spotipy
  | |                                  | |
  | +-------------------+--------------+ |
  |                     |                |
- +--------------------------------------+
+ +---------------------+----------------+
                        |
                        |
-                       |
+                       v
  +---------------------+----------------+
  |                                      |
  | [App] JSON Consuming Application     |
