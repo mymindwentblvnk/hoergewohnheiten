@@ -1,43 +1,40 @@
 # Hoergewohnheiten
 
-This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database.
+This Python script uses the Spotify Web API (with the help of [plamere's spotipy](https://github.com/plamere/spotipy)) to extract your recent Spotify plays and loads it to a PostgreSQL database. With `app.py` there is a Flask application serving stats about your listing behaviour via a REST API.
 
 ## Control flow
 ```
-+----------------------------------------+
-|                                        |
-|  Spotify Web API                       |
-|                                        |
-|  v1/me/player/recently-played          |
-|                                        |
-+----------------------+-----------------+
-                       |
-                       |
  +--------------------------------------+
+ |                                      |
+ | Spotify Web API                      |
+ | (v1/me/player/recently-played)       |
+ |                                      |
+ +---------------------+----------------+
+                       |
+ +---------------------|----------------+
  |                     |                |
  | Hoergewohnheiten    |                |
- | ----------------    |                |
  |                     v                |
- | +-------------------+--------------+ |    +-----------------------+
- | |                                  | |    |                       |
- | | [Batch] extract_spotify_plays.py +----->+ [Database] PostgreSQL |
- | |                                  | |    |                       |
- | +----------------------------------+ |    +----+------------------+
- |                                      |         |
- |                                      |         |
- | +----------------------------------+ |         |
- | |                                  | |         |
- | | [REST API, Flask] app.py         +<----------+
+ | +-------------------+--------------+ |   +-----------------------+
+ | |                                  | |   |                       |
+ | | [Batch] extract_spotify_plays.py +---->+ [Database] PostgreSQL |
+ | |                                  | |   |                       |
+ | +----------------------------------+ |   +----+------------------+
+ |                                      |        |
+ | +----------------------------------+ |        |
+ | |                                  | |        |
+ | | [REST API] app.py                +<---------+
+ | | [Flask]                          | |
  | |                                  | |
  | +-------------------+--------------+ |
  |                     |                |
- +---------------------+----------------+
-                       |
+ +---------------------|----------------+
                        |
                        v
  +---------------------+----------------+
  |                                      |
- | [App] JSON Consuming Application     |
+ | [App] Reading JSON                   |
+ |       Showing beautiful stats        |
  |                                      |
  +--------------------------------------+
 ```
