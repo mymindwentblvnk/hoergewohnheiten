@@ -257,7 +257,6 @@ class Stats(Resource):
 
         return plays_per_artist
 
-
     def get_plays_per_track(self, user_name, from_date, to_date):
         plays_per_track = []
         counts = db.session.\
