@@ -329,10 +329,10 @@ class Stats(Resource):
             limit(self.N).\
             all()
 
-        for count, hour in counts:
-            plays_per_hour_of_day.append({hour: count, })
+        for count, month in counts:
+            plays_per_month.append({month: count, })
 
-        return plays_per_hour_of_day
+        return plays_per_month
 
     def _arg_date_to_datetime(self, from_date, to_date):
         f = datetime.strptime(from_date, '%Y-%M-%d') if from_date else datetime(1970,1,1)
