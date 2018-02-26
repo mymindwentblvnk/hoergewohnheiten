@@ -317,6 +317,23 @@ class Stats(Resource):
 
         return plays_per_hour_of_day
 
+    def get_plays_per_month(self, user_name, from_date, to_date):
+        plays_per_month = []
+        counts = db.session.\
+            query(db.func.count(Play.month).label('cnt'), Play.month).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            group_by(Play.month).\
+            order_by(db.asc(Play.month)).\
+            limit(self.N).\
+            all()
+
+        for count, hour in counts:
+            plays_per_hour_of_day.append({hour: count, })
+
+        return plays_per_hour_of_day
+
     def _arg_date_to_datetime(self, from_date, to_date):
         f = datetime.strptime(from_date, '%Y-%M-%d') if from_date else datetime(1970,1,1)
         t = datetime.strptime(to_date, '%Y-%M-%d') if to_date else datetime.now()
@@ -339,6 +356,7 @@ class Stats(Resource):
                 'total': self.get_total_plays(user_name, from_date, to_date),
                 'per_day_of_week': self.get_plays_per_day_of_week(user_name, from_date, to_date),
                 'per_hour_of_day': self.get_plays_per_hour_of_day(user_name, from_date, to_date),
+                'per_month': self.get_plays_per_month(user_name, from_date, to_date),
             },
         })
         response.headers.add('Access-Control-Allow-Origin', '*')
