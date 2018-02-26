@@ -335,8 +335,8 @@ class Stats(Resource):
         return plays_per_month
 
     def _arg_date_to_datetime(self, from_date, to_date):
-        f = datetime.strptime(from_date, '%Y-%M-%d') if from_date else datetime(1970,1,1)
-        t = datetime.strptime(to_date, '%Y-%M-%d') if to_date else datetime.now()
+        f = datetime.strptime(from_date, '%Y-%m-%d') if from_date else datetime(2017, 8, 1)
+        t = datetime.strptime(to_date, '%Y-%m-%d') if to_date else datetime.now()
         t = t + timedelta(days=1)  # To receive the whole day
         return f, t
 
