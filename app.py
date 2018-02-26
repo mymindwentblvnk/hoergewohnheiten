@@ -236,6 +236,28 @@ class Stats(Resource):
 
         return plays_per_album
 
+    def get_plays_per_artist(self, user_name, from_date, to_date):
+        plays_per_artist = []
+        counts = db.session.\
+            query(db.func.count(Artist.artist_id).label('cnt'), Artist.artist_id).\
+            select_from(Play).\
+            filter_by(user_name=user_name).\
+            filter(Play.played_at_cet >= from_date).\
+            filter(Play.played_at_cet <= to_date).\
+            join(Play.track).\
+            join(Track.artists).\
+            group_by(Artist.artist_id).\
+            order_by(db.desc('cnt')).\
+            limit(self.N).\
+            all()
+
+        for count, artist_id in counts:
+            artist = Artist.query.get(artist_id)
+            plays_per_artist.append({'count': count, 'artist': artist.to_dict(), })
+
+        return plays_per_artist
+
+
     def get_plays_per_track(self, user_name, from_date, to_date):
         plays_per_track = []
         counts = db.session.\
@@ -313,6 +335,7 @@ class Stats(Resource):
             'plays': {
                 'per_track': self.get_plays_per_track(user_name, from_date, to_date),
                 'per_album': self.get_plays_per_album(user_name, from_date, to_date),
+                'per_artist': self.get_plays_per_artist(user_name, from_date, to_date),
                 'total': self.get_total_plays(user_name, from_date, to_date),
                 'per_day_of_week': self.get_plays_per_day_of_week(user_name, from_date, to_date),
                 'per_hour_of_day': self.get_plays_per_hour_of_day(user_name, from_date, to_date),
