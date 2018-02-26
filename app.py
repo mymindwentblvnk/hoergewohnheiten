@@ -334,6 +334,99 @@ class Stats(Resource):
 
         return plays_per_month
 
+    def get_audio_feature_per_month(self, user_name, from_date, to_date):
+        result = dict()
+        sql = """SELECT
+    avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
+    avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
+    avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    t_play.month
+FROM
+    t_play
+JOIN t_track ON t_play.track_id = t_track.track_id
+WHERE t_play.user_name = '{}'
+AND t_play.played_at_cet >= '{}-{}-{}'
+AND t_play.played_at_cet <= '{}-{}-{}'
+GROUP BY t_play.month
+ORDER BY t_play.month ASC"""
+
+        rows = db.session.execute(sql.format(user_name,
+                                  from_date.year,
+                                  from_date.month,
+                                  from_date.day,
+                                  to_date.year,
+                                  to_date.month,
+                                  to_date.day))
+        for row in rows:
+            result[str(row[3])] = {
+                'avg_tempo': row[0],
+                'avg_energy': row[1],
+                'avg_valence': row[2]
+            }
+        return result
+
+    def get_audio_feature_per_day_of_week(self, user_name, from_date, to_date):
+        result = dict()
+        sql = """SELECT
+    avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
+    avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
+    avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    t_play.day_of_week
+FROM
+    t_play
+JOIN t_track ON t_play.track_id = t_track.track_id
+WHERE t_play.user_name = '{}'
+AND t_play.played_at_cet >= '{}-{}-{}'
+AND t_play.played_at_cet <= '{}-{}-{}'
+GROUP BY t_play.day_of_week
+ORDER BY t_play.day_of_week ASC"""
+
+        rows = db.session.execute(sql.format(user_name,
+                                  from_date.year,
+                                  from_date.month,
+                                  from_date.day,
+                                  to_date.year,
+                                  to_date.month,
+                                  to_date.day))
+        for row in rows:
+            result[str(row[3])] = {
+                'avg_tempo': row[0],
+                'avg_energy': row[1],
+                'avg_valence': row[2]
+            }
+        return result
+
+    def get_audio_feature_per_hour(self, user_name, from_date, to_date):
+        result = dict()
+        sql = """SELECT
+    avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
+    avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
+    avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    t_play.hour
+FROM
+    t_play
+JOIN t_track ON t_play.track_id = t_track.track_id
+WHERE t_play.user_name = '{}'
+AND t_play.played_at_cet >= '{}-{}-{}'
+AND t_play.played_at_cet <= '{}-{}-{}'
+GROUP BY t_play.hour
+ORDER BY t_play.hour ASC"""
+
+        rows = db.session.execute(sql.format(user_name,
+                                  from_date.year,
+                                  from_date.month,
+                                  from_date.day,
+                                  to_date.year,
+                                  to_date.month,
+                                  to_date.day))
+        for row in rows:
+            result[str(row[3])] = {
+                'avg_tempo': row[0],
+                'avg_energy': row[1],
+                'avg_valence': row[2]
+            }
+        return result
+
     def _arg_date_to_datetime(self, from_date, to_date):
         f = datetime.strptime(from_date, '%Y-%m-%d') if from_date else datetime(2017, 8, 1)
         t = datetime.strptime(to_date, '%Y-%m-%d') if to_date else datetime.now()
@@ -358,6 +451,11 @@ class Stats(Resource):
                 'per_hour_of_day': self.get_plays_per_hour_of_day(user_name, from_date, to_date),
                 'per_month': self.get_plays_per_month(user_name, from_date, to_date),
             },
+            'audio_feature': {
+                'per_month': self.get_audio_feature_per_month(user_name, from_date, to_date),
+                'per_hour': self.get_audio_feature_per_hour(user_name, from_date, to_date),
+                'per_day_of_week': self.get_audio_feature_per_day_of_week(user_name, from_date, to_date),
+            }
         })
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
