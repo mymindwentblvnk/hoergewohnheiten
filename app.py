@@ -127,6 +127,8 @@ class TrackMixin(object):
                 'tempo': self.tempo,
                 'valence': self.valence,
                 'energy': self.energy,
+                'key': self.key,
+                'loudness': self.loudness,
             },
             'artists': [a.to_dict() for a in self.artists],
             'album': self.album.to_dict(),
@@ -139,6 +141,16 @@ class TrackMixin(object):
     @property
     def spotify_url(self):
         return self.track_data['external_urls']['spotify']
+
+    @property
+    def key(self):
+        if self.audio_feature_data:
+            return self.audio_feature_data['key']
+
+    @property
+    def loudness(self):
+        if self.audio_feature_data:
+            return self.audio_feature_data['loudness']
 
     @property
     def tempo(self):
@@ -339,6 +351,8 @@ class Stats(Resource):
     avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
     avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
     avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    avg((t_track.audio_feature_data->>'key') :: FLOAT) AS avg_key,
+    avg((t_track.audio_feature_data->>'loudness') :: FLOAT) AS avg_loudness,
     t_play.month
 FROM
     t_play
@@ -357,10 +371,12 @@ ORDER BY t_play.month ASC"""
                                   to_date.month,
                                   to_date.day))
         for row in rows:
-            result[str(row[3])] = {
+            result[str(row[5])] = {
                 'avg_tempo': row[0],
                 'avg_energy': row[1],
-                'avg_valence': row[2]
+                'avg_valence': row[2],
+                'avg_key': row[3],
+                'avg_loudness': row[4]
             }
         return result
 
@@ -370,6 +386,8 @@ ORDER BY t_play.month ASC"""
     avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
     avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
     avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    avg((t_track.audio_feature_data->>'key') :: FLOAT) AS avg_key,
+    avg((t_track.audio_feature_data->>'loudness') :: FLOAT) AS avg_loudness,
     t_play.day_of_week
 FROM
     t_play
@@ -388,10 +406,12 @@ ORDER BY t_play.day_of_week ASC"""
                                   to_date.month,
                                   to_date.day))
         for row in rows:
-            result[str(row[3])] = {
+            result[str(row[5])] = {
                 'avg_tempo': row[0],
                 'avg_energy': row[1],
-                'avg_valence': row[2]
+                'avg_valence': row[2],
+                'avg_key': row[3],
+                'avg_loudness': row[4]
             }
         return result
 
@@ -401,6 +421,8 @@ ORDER BY t_play.day_of_week ASC"""
     avg((t_track.audio_feature_data->>'tempo') :: FLOAT) AS avg_tempo,
     avg((t_track.audio_feature_data->>'energy') :: FLOAT) AS avg_energy,
     avg((t_track.audio_feature_data->>'valence') :: FLOAT) AS avg_valence,
+    avg((t_track.audio_feature_data->>'key') :: FLOAT) AS avg_key,
+    avg((t_track.audio_feature_data->>'loudness') :: FLOAT) AS avg_loudness,
     t_play.hour
 FROM
     t_play
@@ -419,10 +441,12 @@ ORDER BY t_play.hour ASC"""
                                   to_date.month,
                                   to_date.day))
         for row in rows:
-            result[str(row[3])] = {
+            result[str(row[5])] = {
                 'avg_tempo': row[0],
                 'avg_energy': row[1],
-                'avg_valence': row[2]
+                'avg_valence': row[2],
+                'avg_key': row[3],
+                'avg_loudness': row[4]
             }
         return result
 
