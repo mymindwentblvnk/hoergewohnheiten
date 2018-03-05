@@ -123,6 +123,7 @@ class TrackMixin(object):
             'id': self.track_id,
             'name': self.track_name,
             'spotify_url': self.spotify_url,
+            'duration': self.duration,
             'audio_feature': {
                 'tempo': self.tempo,
                 'valence': self.valence,
@@ -133,6 +134,10 @@ class TrackMixin(object):
             'artists': [a.to_dict() for a in self.artists],
             'album': self.album.to_dict(),
         }
+
+    @property
+    def duration(self):
+        return self.track_data['duration_ms']
 
     @property
     def track_name(self):
