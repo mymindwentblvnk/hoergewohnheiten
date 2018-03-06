@@ -6,6 +6,101 @@ The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the 
 
 ### Plays
 ```GET /plays/user/<user_name>```
+#### Result
+Returns a list of the latest played tracks.
+```
+{
+  "latest_plays": [
+    {
+      "played_at_cet": "Mon, 05 Mar 2018 20:52:24 GMT", 
+      "track": {
+        "album": {
+          "artists": [
+            {
+              "id": "00sazWvoTLOqg5MFwC68Um", 
+              "image_url": "https://i.scdn.co/image/51f6ae7cf53c70291f2f07c154b9ae2193239111", 
+              "name": "Yann Tiersen", 
+              "spotify_url": "https://open.spotify.com/artist/00sazWvoTLOqg5MFwC68Um"
+            }
+          ], 
+          "id": "6BpM86nsNY2MdlAa33Msq9", 
+          "image_url": "https://i.scdn.co/image/6d6cc5253216f476aaaea505c12ea3d074d79f9c", 
+          "name": "Die fabelhafte Welt der Amelie (Das Original-H\u00f6rspiel zum Film)", 
+          "spotify_url": "https://open.spotify.com/album/6BpM86nsNY2MdlAa33Msq9"
+        }, 
+        "artists": [
+          {
+            "id": "00sazWvoTLOqg5MFwC68Um", 
+            "image_url": "https://i.scdn.co/image/51f6ae7cf53c70291f2f07c154b9ae2193239111", 
+            "name": "Yann Tiersen", 
+            "spotify_url": "https://open.spotify.com/artist/00sazWvoTLOqg5MFwC68Um"
+          }, 
+          {
+            "id": "7EV6jW6dotBdvsHj6xPixi", 
+            "image_url": "https://i.scdn.co/image/43d53b2a4385d466b460913901b83f41177a05f8", 
+            "name": "The Divine Comedy", 
+            "spotify_url": "https://open.spotify.com/artist/7EV6jW6dotBdvsHj6xPixi"
+          }
+        ], 
+        "audio_feature": {
+          "energy": 0.339, 
+          "key": 7, 
+          "loudness": -8.123, 
+          "tempo": 100.104, 
+          "valence": 0.952
+        }, 
+        "duration": 183466, 
+        "id": "7GrXQbXokarlsCjozXmqvC", 
+        "name": "Les jours tristes - Instrumental", 
+        "spotify_url": "https://open.spotify.com/track/7GrXQbXokarlsCjozXmqvC"
+      }
+    }, 
+    {
+      "played_at_cet": "Mon, 05 Mar 2018 20:49:04 GMT", 
+      "track": {
+        "album": {
+          "artists": [
+            {
+              "id": "7EV6jW6dotBdvsHj6xPixi", 
+              "image_url": "https://i.scdn.co/image/43d53b2a4385d466b460913901b83f41177a05f8", 
+              "name": "The Divine Comedy", 
+              "spotify_url": "https://open.spotify.com/artist/7EV6jW6dotBdvsHj6xPixi"
+            }
+          ], 
+          "id": "4pFkI7o1FTl2wWon60zrog", 
+          "image_url": "https://i.scdn.co/image/39d9ddd6d00eee9d71acc3bd250f567a01c62c36", 
+          "name": "Bang Goes The Knighthood", 
+          "spotify_url": "https://open.spotify.com/album/4pFkI7o1FTl2wWon60zrog"
+        }, 
+        "artists": [
+          {
+            "id": "7EV6jW6dotBdvsHj6xPixi", 
+            "image_url": "https://i.scdn.co/image/43d53b2a4385d466b460913901b83f41177a05f8", 
+            "name": "The Divine Comedy", 
+            "spotify_url": "https://open.spotify.com/artist/7EV6jW6dotBdvsHj6xPixi"
+          }
+        ], 
+        "audio_feature": {
+          "energy": 0.57, 
+          "key": 6, 
+          "loudness": -9.873, 
+          "tempo": 116.016, 
+          "valence": 0.962
+        }, 
+        "duration": 198306, 
+        "id": "5CmQgmKwmSf3ojZTuvHekY", 
+        "name": "At The Indie Disco", 
+        "spotify_url": "https://open.spotify.com/track/5CmQgmKwmSf3ojZTuvHekY"
+      }
+    }, 
+    ...
+  ], 
+  "meta": {
+    "user_name": "<user_name>"
+  }
+}
+
+```
 
 ### Count of Plays
 ```GET /counts/per/<unit>/user/<user_name>/from/2018-01-01/to/2018-03-01```
@@ -21,6 +116,7 @@ The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the 
 ```/from/2018-01-01/to/2018-03-01``` can be left out (or only the to date)
 
 #### Result per Track (per Album/Artists is similar to that)
+Returns a sorted list of the most played tracks with their play count.
 ```
 {
   "meta": {
@@ -124,6 +220,7 @@ The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the 
 ```/from/2018-01-01/to/2018-03-01``` can be left out (or only the to date)
 
 #### Result per Day (per Hour/Month is similar to that)
+Returns a object with average audio feature data per day of week.
 ```
 {
   "data": {
