@@ -16,13 +16,11 @@ app = Flask(__name__)
 # 1) Configure app #
 # ################ #
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-if POSTGRES_ENVIRON_KEY in os.environ:
-    app.config['SQLALCHEMY_DATABASE_URI'] = \
-        os.environ[settings.POSTGRES_ENVIRON_KEY]
-else:
+try:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ[POSTGRES_ENVIRON_KEY]
+except KeyError:
     import secret_settings
-    app.config['SQLALCHEMY_DATABASE_URI'] = \
-        secret_settings.POSTGRES_CONNECTION_STRING
+    app.config['SQLALCHEMY_DATABASE_URI'] = secret_settings.POSTGRES_CONNECTION_STRING
 
 
 # ############################## #
