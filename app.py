@@ -778,7 +778,8 @@ ORDER BY t_play.hour ASC"""
 
 
 api.add_resource(Plays,
-    '/plays/<string:user_name>')
+    '/plays/<string:user_name>',
+    '/plays/user/<string:user_name>')
 api.add_resource(Stats,
     '/stats/<string:user_name>',
     '/stats/<string:user_name>/<string:from_date>',
