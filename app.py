@@ -5,7 +5,8 @@ from flask_restful import Api
 from app_models import db
 from app_api import Plays, Counts, AudioFeature
 
-import settings
+
+POSTGRES_ENVIRON_KEY = 'DATABASE_URL'
 
 
 app = Flask(__name__)
@@ -13,7 +14,7 @@ app = Flask(__name__)
 
 def config_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    if settings.POSTGRES_ENVIRON_KEY in os.environ:
+    if POSTGRES_ENVIRON_KEY in os.environ:
         app.config['SQLALCHEMY_DATABASE_URI'] = \
             os.environ[settings.POSTGRES_ENVIRON_KEY]
     else:

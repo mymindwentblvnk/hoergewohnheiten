@@ -24,9 +24,7 @@ def convert_played_at_from_response_to_datetime(played_at):
         return datetime.strptime(played_at, '%Y-%m-%dT%H:%M:%SZ')
 
 
-def convert_datetime_from_timezone_to_timezone(datetime_to_convert,
-                                               from_tz_code='UTC',
-                                               to_tz_code=settings.TARGET_TIMEZONE):
+def convert_datetime_from_timezone_to_timezone(datetime_to_convert, from_tz_code, to_tz_code):
     from_tz = tz.gettz(from_tz_code)
     to_tz = tz.gettz(to_tz_code)
 
@@ -105,7 +103,9 @@ class SpotifyConnection(object):
     def get_play_from_played_at_utc_and_track_id(self, played_at_utc, track_id):
         played_at_utc = convert_played_at_from_response_to_datetime(played_at_utc)
         played_at_utc = set_timezone_to_datetime(played_at_utc, timezone='UTC')
-        played_at_cet = convert_datetime_from_timezone_to_timezone(played_at_utc)
+        played_at_cet = convert_datetime_from_timezone_to_timezone(played_at_utc,
+                                                                   from_tz_code='UTC',
+                                                                   to_tz_code='CET')
         # Play
         play = Play()
         play.user_name = self.user_name
