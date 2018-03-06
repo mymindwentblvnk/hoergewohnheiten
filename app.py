@@ -2,8 +2,8 @@ import os
 from flask import Flask
 from flask_restful import Api
 
-from app_models import db
-from app_api import Plays, Counts, AudioFeature
+from models import db
+from api import Plays, Counts, AudioFeature
 
 
 POSTGRES_ENVIRON_KEY = 'DATABASE_URL'

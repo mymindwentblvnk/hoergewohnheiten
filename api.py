@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import jsonify
 from flask_restful import Resource
-from app_models import db, Play, Track, Album, Artist
+from models import db, Play, Track, Album, Artist
 
 
 def arg_date_to_datetime(from_date, to_date):

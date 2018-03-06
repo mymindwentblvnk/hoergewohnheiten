@@ -9,8 +9,6 @@ from models import Play, Track, Album, Artist, PostgreSQLConnection
 
 import secret_settings
 
-import settings
-
 
 def set_timezone_to_datetime(datetime_to_set, timezone):
     return datetime_to_set.replace(tzinfo=tz.gettz(timezone))
