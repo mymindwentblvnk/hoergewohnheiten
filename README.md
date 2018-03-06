@@ -7,10 +7,20 @@ The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the 
 ### Plays
 ```GET /plays/user/<user_name>```
 
-### Count of Plays (per Track/Album/Artist)
-#### Per Track
-```GET /counts/per/track/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
+### Count of Plays
+```GET /counts/per/<unit>/user/<user_name>/from/2018-01-01/to/2018-03-01```
+
+`<unit>` can be 
+* `track`
+* `album`
+* `artist`
+* `hour`
+* `day`
+* `month`
+
+```/from/2018-01-01/to/2018-03-01``` can be left out (or only the to date)
+
+#### Result per Track (per Album/Artists is similar to that)
 ```
 {
   "meta": {
@@ -64,20 +74,7 @@ The Python script `extract_spotify_plays.py` uses the Spotify Web API (with the 
 }
 ```
 
-#### Per Album
-```GET /counts/per/album/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
-As above.
-
-#### Per Artist
-```GET /counts/per/artist/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
-As above.
-
-### Count of Plays (per Hour/Day/Month)
-#### Per Hour
-```GET /counts/per/hour/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
+#### Result per Track (per Album/Artists is similar to that)
 ```
 {
   "data": {
@@ -115,20 +112,18 @@ As above.
   }
 }
 ```
-#### Per Day
-```GET /counts/per/day/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
-As above.
 
-#### Per Month
-```GET /counts/per/month/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
-As above.
+### Audio Features
+```GET /audiofeatures/per/<unit>/user/<user_name>/from/2018-01-01/to/2018-03-01```
 
-### Audio Features (per Hour/Day/Month)
-#### Per Day
-```GET /audiofeatures/per/day/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result
+`<unit>` can be 
+* `hour`
+* `day`
+* `month`
+
+```/from/2018-01-01/to/2018-03-01``` can be left out (or only the to date)
+
+#### Result per Day (per Hour/Month is similar to that)
 ```
 {
   "data": {
@@ -191,15 +186,6 @@ As above.
   }
 }
 ```
-#### Per Hour
-```GET /audiofeatures/per/hour/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result 
-As above.
-
-#### Per Month
-```GET /audiofeatures/per/month/user/<user_name>/from/2018-01-01/to/2018-03-01```
-#### Result 
-As above.
 
 
 ## Control Flow
