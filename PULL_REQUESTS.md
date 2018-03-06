@@ -10,3 +10,8 @@
 * Introduce tests with native PostgreSQL database
 
 * Enable Travis CI
+
+* Installation tutorials
+  
+  * How to run spotipy (auth flow)
+  * How to install the flask application at e. g. Heroku
