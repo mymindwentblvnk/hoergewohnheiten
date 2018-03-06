@@ -239,39 +239,19 @@ Returns a object with average audio feature data per day of week.
       "avg_valence": 0.38840694949495
     }, 
     "2": {
-      "avg_energy": 0.566855514579761, 
-      "avg_key": 5.27958833619211, 
-      "avg_loudness": -9.98453945111494, 
-      "avg_tempo": 116.93982890223, 
-      "avg_valence": 0.411569468267581
+      ...
     }, 
     "3": {
-      "avg_energy": 0.560633994407158, 
-      "avg_key": 5.27404921700224, 
-      "avg_loudness": -10.2001771066369, 
-      "avg_tempo": 116.792395227442, 
-      "avg_valence": 0.420372632363908
+        ...
     }, 
     "4": {
-      "avg_energy": 0.530835986930414, 
-      "avg_key": 5.09961144471918, 
-      "avg_loudness": -10.5677513246202, 
-      "avg_tempo": 115.044523489933, 
-      "avg_valence": 0.408663087248321
+      ...
     }, 
     "5": {
-      "avg_energy": 0.537262560762102, 
-      "avg_key": 5.29093717816684, 
-      "avg_loudness": -10.0944526261586, 
-      "avg_tempo": 116.890798661174, 
-      "avg_valence": 0.447021627188465
+      ...
     }, 
     "6": {
-      "avg_energy": 0.524706814084507, 
-      "avg_key": 5.41327967806841, 
-      "avg_loudness": -10.85093722334, 
-      "avg_tempo": 115.591962173039, 
-      "avg_valence": 0.403796458752515
+      ...
     }
   }, 
   "meta": {
