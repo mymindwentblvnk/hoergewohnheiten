@@ -7,7 +7,7 @@ import spotipy.util
 
 from models import Play, Track, Album, Artist, PostgreSQLConnection
 
-import secret_settings
+import settings
 
 
 def set_timezone_to_datetime(datetime_to_set, timezone):
@@ -162,7 +162,7 @@ class HoergewohnheitenManager(object):
 
 def process_hoergewohnheiten(user_name):
     print("***", user_name, "***")
-    user_data = secret_settings.SPOTIFY_USERS[user_name]
+    user_data = settings.SPOTIFY_USERS[user_name]
     mgr = HoergewohnheitenManager(user_data)
     mgr.process_hoergewohnheiten()
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     if args.user_name:
         process_hoergewohnheiten(args.user_name)
     else:
-        for user_name in secret_settings.SPOTIFY_USERS:
+        for user_name in settings.SPOTIFY_USERS:
             process_hoergewohnheiten(user_name)
 
     print("Finished at {}.".format(datetime.now()))

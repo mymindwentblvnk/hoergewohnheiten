@@ -17,7 +17,7 @@ run-server:
 run:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Extracting spotify plays.";
-	. ${VENV_NAME}/bin/activate; python extract_spotify_plays/main.py ${ARGS}; deactivate
+	. ${VENV_NAME}/bin/activate; python extract/main.py ${ARGS}; deactivate
 
 flake8:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi

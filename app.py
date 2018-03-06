@@ -19,8 +19,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 try:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ[POSTGRES_ENVIRON_KEY]
 except KeyError:
-    import secret_settings
-    app.config['SQLALCHEMY_DATABASE_URI'] = secret_settings.POSTGRES_CONNECTION_STRING
+    import settings
+    app.config['SQLALCHEMY_DATABASE_URI'] = settings.POSTGRES_CONNECTION_STRING
 
 
 # ############################## #

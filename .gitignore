@@ -1,7 +1,7 @@
 # Custom
 .cache-*
 *.swp
-secret_settings.py
+settings.py
 *.pckl
 
 # Byte-compiled / optimized / DLL files

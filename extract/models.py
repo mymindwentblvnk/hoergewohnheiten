@@ -104,8 +104,8 @@ class PostgreSQLConnection(object):
         if POSTGRES_ENVIRON_KEY in os.environ:
             self.engine = create_engine(os.environ[POSTGRES_ENVIRON_KEY])
         else:
-            import secret_settings
-            self.engine = create_engine(secret_settings.POSTGRES_CONNECTION_STRING)
+            import settings
+            self.engine = create_engine(settings.POSTGRES_CONNECTION_STRING)
         self.session = sessionmaker(autoflush=False)(bind=self.engine)
 
     def drop_db(self):
