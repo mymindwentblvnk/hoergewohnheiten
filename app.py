@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_restful import Api
 
 from models import db
@@ -43,6 +43,11 @@ api.add_resource(AudioFeature,
     '/audiofeatures/per/<string:unit>/user/<string:user_name>',
     '/audiofeatures/per/<string:unit>/user/<string:user_name>/from/<string:from_date>',
     '/audiofeatures/per/<string:unit>/user/<string:user_name>/from/<string:from_date>/to/<string:to_date>')
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Hoergewohnheiten</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script src="{{ url_for('static', filename='js/hoergewohnheiten.js') }}"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/hoergewohnheiten.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <header class="page-header">
+                <h1>Hoergewohnheiten</h1>
+            </header>
+            <main>
+                <div class="row">
+                    <div>
+                        <div class="col-sm-4">
+                            <h2>Tracks</h2>
+                            <div id="top-tracks"></div>
+                        </div>
+                        <div class="col-sm-4">
+                            <h2>Albums</h2>
+                            <div id="top-albums"></div>
+                        </div>
+                        <div class="col-sm-4">
+                            <h2>Artists</h2>
+                            <div id="top-artists"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <ul class="list-group" id="latest-plays"></ul>
+                </div>
+            </main>
+            <footer>
+            </footer>
+        </div> 
+    </body>
+</html>
