@@ -136,9 +136,10 @@ class SpotifyConnection(object):
         response = self.client._get('me/player/recently-played', after=after, limit=limit)
         play_tuples.extend(self._get_play_tuples_from_response(response))
 
-        while 'next' in response:
+        while response and 'next' in response:
             response = self.client.next(response)
-            play_tuples.extend(self._get_play_tuples_from_response(response))
+            if response:
+                play_tuples.extend(self._get_play_tuples_from_response(response))
 
         return play_tuples
 
