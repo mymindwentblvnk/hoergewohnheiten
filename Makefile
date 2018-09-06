@@ -23,3 +23,18 @@ flake8:
 	if [ ! -d ${VENV_NAME} ]; then @echo "Environment not found."; make env; fi
 	@echo "Checking for PEP 8.";
 	. ${VENV_NAME}/bin/activate; flake8 . --config=./flake8.config; deactivate
+
+docker-build:
+	make docker-clean
+	sudo docker build -t hoergewohnheiten-image --no-cache=true .
+
+docker-clean:
+	-sudo docker rm -f hoergewohnhiten-container
+	-sudo docker rmi hoergewohnheiten-image
+
+docker-run-extraction:
+	sudo docker run --rm -a stdout -a stderr --name hoergewohnheiten-container -v $(shell pwd):/workdir -i hoergewohnheiten-image /bin/bash -c "python extract/main.py"
+	
+
+docker-create-database-tables:
+	sudo docker run --rm -a stdout -a stderr --name hoergewohnheiten-container -v $(shell pwd):/workdir -i gun-image /bin/bash -c 'python -c "from models import PostgreSQLConnection; PostgreSQLConnection().create_db()"'
